@@ -1,0 +1,11 @@
+@font-face {
+    font-family: 'geist-sans';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('./assets/fonts/Geist/GeistVariableVF.woff2') format('woff2');
+}
+
+@theme {
+    --font-sans: "geist-sans", Arial, ui-sans-serif, system-ui, sans-serif;
+}
