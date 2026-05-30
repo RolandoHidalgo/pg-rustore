@@ -90,7 +90,7 @@ const finalSchema = computed(() => {
 
   return schema.passthrough()
 })
-const {handleSubmit, values, resetForm} = useForm({
+const {handleSubmit, values, resetForm,setFieldValue} = useForm({
   validationSchema: computed(() => toTypedSchema(finalSchema.value)),
   keepValuesOnUnmount: true
 })
@@ -158,6 +158,12 @@ watchEffect(() => {
     newDb.value = false
   }
 })
+
+watchEffect(() => {
+  if (store.currentOptions.backupPath && store.currentOptions.backupPath!=='') {
+    setFieldValue('backupPath',store.currentOptions.backupPath)
+  }
+})
 const currentDsName = computed(() => {
 
   return store.currentOptions.dsName
@@ -206,7 +212,7 @@ function handleDone() {
           <div v-if="isRestoreOnInit" class="col-span-2">
             <DatasourceSelect/>
           </div>
-          <div class="col-span-2" v-if="!newDb">
+          <div  v-if="!newDb">
             <DbSelect :ds-name="currentDsName ?? ''"/>
           </div>
 
@@ -225,51 +231,7 @@ function handleDone() {
           <NewDbForm v-if="newDb"/>
 
           <div class="col-span-2" v-if="!isRestoreClone">
-            <!--            <FormField v-slot="{ handleChange, handleBlur }" name="backupPath">-->
-            <!--              <FormItem>-->
-            <!--                <FormLabel-->
-            <!--                  >Backup file-->
-            <!--&lt;!&ndash;                  <HoverCard v-if="backupInfo.dbName !== ''">&ndash;&gt;-->
-            <!--&lt;!&ndash;                    <HoverCardTrigger as-child>&ndash;&gt;-->
-            <!--&lt;!&ndash;                      <Info class="text-muted-foreground size-4" />&ndash;&gt;-->
-            <!--&lt;!&ndash;                    </HoverCardTrigger>&ndash;&gt;-->
-            <!--&lt;!&ndash;                    <HoverCardContent class="w-78 mx-2  ">&ndash;&gt;-->
-            <!--&lt;!&ndash;                      <div class="flex justify-between space-x-4">&ndash;&gt;-->
-            <!--&lt;!&ndash;&lt;!&ndash;                        <div&ndash;&gt;&ndash;&gt;-->
-            <!--&lt;!&ndash;&lt;!&ndash;                          class="flex aspect-square size-8 items-center justify-center rounded-lg bg-blue-500 text-white"&ndash;&gt;&ndash;&gt;-->
-            <!--&lt;!&ndash;&lt;!&ndash;                        >&ndash;&gt;&ndash;&gt;-->
-            <!--&lt;!&ndash;&lt;!&ndash;                          <DatabaseZap />&ndash;&gt;&ndash;&gt;-->
-            <!--&lt;!&ndash;&lt;!&ndash;                        </div>&ndash;&gt;&ndash;&gt;-->
-            <!--&lt;!&ndash;                        <div class="space-y-1">&ndash;&gt;-->
-            <!--&lt;!&ndash;                          <h4 class="text-sm font-semibold">Backup info:</h4>&ndash;&gt;-->
-            <!--&lt;!&ndash;                          <p class="text-sm">&ndash;&gt;-->
-            <!--&lt;!&ndash;                            Backup file of db&ndash;&gt;-->
-            <!--&lt;!&ndash;                            <span class="font-bold">{{ backupInfo.dbName }}</span> created using&ndash;&gt;-->
-            <!--&lt;!&ndash;                            postgres&ndash;&gt;-->
-            <!--&lt;!&ndash;                            <span class="font-bold">{{ backupInfo.dbVersion }}</span> and pg_dump&ndash;&gt;-->
-            <!--&lt;!&ndash;                             <span class="font-bold">{{ backupInfo.pgDumpVersion }}</span>&ndash;&gt;-->
-            <!--&lt;!&ndash;                          </p>&ndash;&gt;-->
-            <!--&lt;!&ndash;                          <div class="flex items-center pt-2">&ndash;&gt;-->
-            <!--&lt;!&ndash;                            <CalendarIcon class="mr-2 h-4 w-4 opacity-70" />&ndash;&gt;-->
-            <!--&lt;!&ndash;                            <span class="text-xs text-muted-foreground">&ndash;&gt;-->
-            <!--&lt;!&ndash;                              Created at {{ backupInfo.fecha }}&ndash;&gt;-->
-            <!--&lt;!&ndash;                            </span>&ndash;&gt;-->
-            <!--&lt;!&ndash;                          </div>&ndash;&gt;-->
-            <!--&lt;!&ndash;                        </div>&ndash;&gt;-->
-            <!--&lt;!&ndash;                      </div>&ndash;&gt;-->
 
-            <!--&lt;!&ndash;                    </HoverCardContent>&ndash;&gt;-->
-            <!--&lt;!&ndash;                  </HoverCard>&ndash;&gt;-->
-            <!--                </FormLabel>-->
-            <!--                <FormControl v-if="!isFileSelected">-->
-            <!--                  <Input id="file_input" type="file" @change="handleChange" @blur="handleBlur" />-->
-            <!--                </FormControl>-->
-            <!--&lt;!&ndash;                <FormDescription v-else>&ndash;&gt;-->
-            <!--&lt;!&ndash;                  Archivo seleccionado {{ store.currentConexionValues.backupPath }}&ndash;&gt;-->
-            <!--&lt;!&ndash;                </FormDescription>&ndash;&gt;-->
-            <!--                <FormMessage />-->
-            <!--              </FormItem>-->
-            <!--            </FormField>-->
             <FormField name="backupPath">
               <FileDialogField name="backupPath" label="Backup file"/>
             </FormField>

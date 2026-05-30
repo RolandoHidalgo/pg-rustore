@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "pgrustore",
+        "title": "PG_RUSTORE",
         "width": 342,
         "height": 626,
         "resizable": false,

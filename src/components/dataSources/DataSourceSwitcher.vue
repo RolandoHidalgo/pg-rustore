@@ -172,7 +172,7 @@ const isOpen = ref(false)
               <Plus class="size-4"/>
             </div>
             <div class="font-medium text-muted-foreground">
-              binnnn
+              Binarios
             </div>
           </DropdownMenuItem>
           <DropdownMenuItem class="gap-2 p-2" @click="appStore.openDataSourceForm(dsStore.activeDs)"

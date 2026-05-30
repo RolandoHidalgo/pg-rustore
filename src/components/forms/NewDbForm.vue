@@ -5,7 +5,7 @@ import CustomSelect from "@/components/forms/CustomSelect.vue";
 </script>
 
 <template>
-  <div>
+  <div class="min-w-full">
     <CustomSelect
       name="encoding"
       label="Encoding"

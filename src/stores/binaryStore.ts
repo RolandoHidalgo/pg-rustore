@@ -8,6 +8,7 @@ export const useBinaryStore = defineStore('binaryStore', () => {
     const isFetching = ref(false);
 
     async function getRemoteBinaries() {
+        console.log('fetching');
         isFetching.value = true
         const release: Release = await invoke("fetch_bins");
         remoteBinaries.value = release.assets

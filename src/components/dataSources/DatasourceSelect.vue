@@ -29,7 +29,7 @@ const {datasources} = useDatasourceStore()
       <FormLabel>Datasource.</FormLabel>
 
       <Select v-bind="componentField">
-        <SelectTrigger>
+        <SelectTrigger class="min-w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

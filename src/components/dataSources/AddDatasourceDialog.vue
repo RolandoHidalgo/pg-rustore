@@ -179,7 +179,7 @@ store.$onAction(({ name, after }) => {
         <SheetDescription> Parámetros de conexión.</SheetDescription>
       </SheetHeader>
       <form class="w-full flex flex-col" @submit="onSubmit">
-        <CardContent class="grid grid-cols-2 gap-2 overflow-y-auto">
+        <CardContent class="grid grid-cols-2 gap-2 overflow-y-auto pb-4">
 <!--          <div class="col-span-2">-->
 <!--            <FormField name="isSSH">-->
 <!--              <FormItem class="flex flex-row items-center justify-between rounded-lg border p-4">-->
@@ -301,7 +301,7 @@ store.$onAction(({ name, after }) => {
           </template>
         </CardContent>
       </form>
-      <SheetFooter>
+      <SheetFooter >
         <Button @click="onSubmit" :disabled="updating">
           <ReloadIcon class="w-4 h-4 mr-2 animate-spin" v-if="updating" />
           Aceptar

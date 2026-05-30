@@ -1,3 +1,4 @@
+use std::env::home_dir;
 use crate::config::BinaryInfo;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
@@ -39,6 +40,9 @@ pub async fn download_with_progress(
     dest_path: &str,
     on_event: &Channel<DownloadEvent>
 ) -> Result<(), Box<dyn std::error::Error>> {
+
+    let home = home_dir();
+    
     let client = Client::new();
     
     let resp = client
@@ -61,7 +65,7 @@ pub async fn download_with_progress(
             msg: "iniciado".to_string(),
         })?;
 
-    let mut file = File::create(Path::new("C:/Users/rolan/pgrustore/bins/").join(dest_path))?;
+    let mut file = File::create(Path::new(home.unwrap().as_path()).join("pgrustore/bins/").join(dest_path))?;
     let mut downloaded: u64 = 0;
 
     let mut stream = resp.bytes_stream();
@@ -107,7 +111,8 @@ pub fn extract_tar_gz(file_path: &str) -> Result<(), Box<dyn std::error::Error>>
 }
 pub fn get_downloaded_binaries() -> Vec<String> {
     // Detectar arquitectura
-    let base_path = Path::new("C:/Users/rolan/pgrustore/bins/");
+    let home = home_dir();
+    let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/bins/");
 
     let mut results = Vec::new();
     if let Ok(entries) = fs::read_dir(base_path) {
@@ -128,7 +133,10 @@ pub fn remove_dir(name: String) {
         .iter()
         .find(|entry_b| name.contains(entry_b.as_str()))
     {
-        let path = Path::new("C:/Users/rolan/pgrustore/bins/").join(found);
+        let home = home_dir();
+        let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/bins/");
+        
+        let path = base_path.join(found);
         fs::remove_dir_all(path).unwrap();
     } else {
         println!("No se encontró ese elemento");

@@ -1,3 +1,4 @@
+use std::env::home_dir;
 use std::fs;
 use crate::binaries::{
     download_with_progress, extract_tar_gz, get_downloaded_binaries, github_client, Release,
@@ -100,6 +101,8 @@ pub fn get_binaries() -> Vec<BinaryInfo> {
         Path::new("C:/Program Files (x86)/PostgreSQL"),
     ];
     let bins = get_downloaded_binaries();
+    let home = home_dir();
+    let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/bins/");
     let installed: Vec<BinaryInfo> = bins
         .iter()
         .map(|bin| BinaryInfo {
@@ -109,7 +112,7 @@ pub fn get_binaries() -> Vec<BinaryInfo> {
                 .and_then(|rest| rest.strip_suffix("-win"))
                 .unwrap_or("")
                 .to_string(),
-            binary: format!("{}/{}/bin", "C:/Users/rolan/pgrustore/bins", bin),
+            binary: format!("{}/{}/bin", base_path.to_str().unwrap(), bin),
         })
         .collect();
     
@@ -207,10 +210,12 @@ pub async fn download_bin(url: String, name: String, on_event: Channel<DownloadE
     download_with_progress(url.as_str(), name.as_str(), &on_event)
         .await
         .unwrap();
-    extract_tar_gz(format!("C:/Users/rolan/pgrustore/bins/{}", name).as_str())
+    let home = home_dir();
+    let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/bins/").join(name);
+    extract_tar_gz(base_path.to_str().unwrap())
         .expect("TODO: panic message");
-    let path = Path::new("C:/Users/rolan/pgrustore/bins/").join(name.as_str());
-    fs::remove_file(path).unwrap();
+    //let path = Path::new("C:/Users/rolan/pgrustore/bins/").join(name.as_str());
+    fs::remove_file(base_path).unwrap();
     on_event
         .send(DownloadEvent::Finished {
             msg: "completo".to_string(),
@@ -225,8 +230,12 @@ pub fn remove_bin(name: String, on_event: Channel<DownloadEvent>) {
         .send(DownloadEvent::Started {
             msg: "iniciado".to_string(),
         }).unwrap();
-    let path = Path::new("C:/Users/rolan/pgrustore/bins/").join(name.strip_suffix(".tar.gz").unwrap());
-    fs::remove_dir_all(path).unwrap();
+    let home = home_dir();
+
+    let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/bins/").join(name.strip_suffix(".tar.gz").unwrap());
+
+
+    fs::remove_dir_all(base_path).unwrap();
     on_event
         .send(DownloadEvent::Finished {
             msg: "completo".to_string(),

@@ -1,3 +1,4 @@
+use std::env::home_dir;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
@@ -32,15 +33,23 @@ pub struct DataSourceConfig {
 }
 
 pub fn load_config() -> Config {
-    let path = Path::new("C:/Users/rolan/pgrustore/config.toml");
-    let content = fs::read_to_string(path).expect("No se pudo leer el archivo");
+    let home = home_dir();
+
+    let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/config.toml");
+    
+    //let path = Path::new("C:/Users/rolan/pgrustore/config.toml");
+    let content = fs::read_to_string(base_path).expect("No se pudo leer el archivo");
     toml::from_str(&content).expect("Error al parsear TOML")
 }
 
 pub fn save_config(cfg: &Config) {
-    let path = Path::new("C:/Users/rolan/pgrustore/config.toml");
+    let home = home_dir();
+
+    let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/config.toml"); 
+    
+    //let path = Path::new("C:/Users/rolan/pgrustore/config.toml");
     let new_content = toml::to_string_pretty(&cfg).expect("Error al serializar TOML");
-    fs::write(path, new_content).expect("NO se pudo guarda la config");
+    fs::write(base_path, new_content).expect("NO se pudo guarda la config");
 }
 #[derive(Clone, Serialize, Debug)]
 pub struct BinaryInfo {

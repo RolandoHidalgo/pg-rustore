@@ -26,8 +26,8 @@ const props = defineProps<{
     <FormItem>
       <FormLabel>{{ props.label }}</FormLabel>
 
-      <Select v-bind="componentField">
-        <SelectTrigger>
+      <Select v-bind="componentField" class="min-w-full">
+        <SelectTrigger class="min-w-full">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

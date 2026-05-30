@@ -1,15 +1,29 @@
 <script setup lang="ts">
-import { open } from "@tauri-apps/plugin-dialog";
-import { useField } from 'vee-validate'
+import {open} from "@tauri-apps/plugin-dialog";
+import {useField} from 'vee-validate'
 import {FormControl, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
+import {Button} from "@/components/ui/button";
+import {computed} from "vue";
 
 const props = defineProps({
-  name: { type: String, required: true },
-  label: { type: String, default: 'Select file' }
+  name: {type: String, required: true},
+  label: {type: String, default: 'Select file'}
 })
 
-const { value, errorMessage, handleChange } = useField(props.name)
+const {value, errorMessage, handleChange} = useField(props.name)
+const valueShow = computed(() => {
+  if (value.value) {
 
+    const base = value.value.split('.backup')[0];
+
+    if (base.includes("\\")) {
+      const paths = base.split("\\");
+      return paths[paths.length - 1];
+    }
+    return base;
+  }
+  return '';
+})
 const selectFile = async () => {
   const selected = await open({
     multiple: false,
@@ -26,14 +40,17 @@ const selectFile = async () => {
   <FormItem>
     <FormLabel>{{ props.label }}</FormLabel>
     <FormControl>
-      <button
+      <span v-if="value">Backup: {{ valueShow }}</span>
+      <Button
+
           type="button"
-          class="shadcn-btn"
+          variant="ghost"
+          size="sm"
           @click="selectFile"
       >
-        Abrir dialog
-      </button>
-      <span v-if="value">{{ value }}</span>
+        Seleccionar Backup
+      </Button>
+
     </FormControl>
     <FormMessage>{{ errorMessage }}</FormMessage>
   </FormItem>
