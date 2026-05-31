@@ -16,7 +16,7 @@ import {
 import {useAppStore} from '@/stores/appStore'
 import {Progress} from '@/components/ui/progress'
 import {Button} from "@/components/ui/button";
-import {Avatar,AvatarFallback} from "@/components/ui/avatar";
+import {Avatar, AvatarFallback} from "@/components/ui/avatar";
 import {check} from '@tauri-apps/plugin-updater';
 import {relaunch} from '@tauri-apps/plugin-process';
 
@@ -51,33 +51,39 @@ const checkUpdates = async () => {
     messages.value = `found update ${update.version} from ${update.date}`;
 
     // alternatively we could also call update.download() and update.install() separately
-    await update.downloadAndInstall((event) => {
-      switch (event.event) {
-        case 'Started':
-          contentLength.value = event.data.contentLength!;
-          console.log(`started downloading ${event.data.contentLength} bytes`);
-          messages.value = `started downloading ${event.data.contentLength} bytes`;
-          break;
-        case 'Progress':
+    try {
+      await update.downloadAndInstall((event) => {
+        switch (event.event) {
+          case 'Started':
+            contentLength.value = event.data.contentLength!;
+            console.log(`started downloading ${event.data.contentLength} bytes`);
+            messages.value = `started downloading ${event.data.contentLength} bytes`;
+            break;
+          case 'Progress':
 
-          downloaded.value += event.data.chunkLength;
-          console.log(`downloaded ${downloaded} from ${contentLength}`);
+            downloaded.value += event.data.chunkLength;
+            console.log(`downloaded ${downloaded} from ${contentLength}`);
 
-          porciento.value = downloaded.value * 100 / contentLength.value;
+            porciento.value = downloaded.value * 100 / contentLength.value;
 
 
-          messages.value = `downloaded ${downloaded} from ${contentLength}`;
-          break;
-        case 'Finished':
-          console.log('download finished');
-          break;
-      }
-    });
+            messages.value = `downloaded ${downloaded} from ${contentLength}`;
+            break;
+          case 'Finished':
+            console.log('download finished');
+            break;
+        }
+      });
+    } catch (e) {
+      messages.value = e + 'asdasdad';
+    }
 
     console.log('update installed');
+    messages.value = 'instalo'
     await relaunch();
   } else {
     console.log("no hay nada")
+    messages.value = 'no hay nada';
   }
 
 }
