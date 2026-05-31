@@ -67,7 +67,7 @@ const checkUpdates = async () => {
             porciento.value = downloaded.value * 100 / contentLength.value;
 
 
-            messages.value = `downloaded ${downloaded} from ${contentLength}`;
+            messages.value = `downloaded ${downloaded.value} from ${contentLength.value}`;
             break;
           case 'Finished':
             console.log('download finished');
@@ -96,7 +96,7 @@ const checkUpdates = async () => {
     <SheetContent side="bottom" class="rounded-t-lg">
       <SheetHeader>
         <SheetTitle>Acerca de ...</SheetTitle>
-        <SheetDescription> Infomación sobre esta versión.</SheetDescription>
+        <SheetDescription> Infomación sobre esta versión. siuu</SheetDescription>
       </SheetHeader>
       <div class="flex items-center gap-4  justify-between space-x-4 px-2">
         <div class="flex items-center  space-x-4">
