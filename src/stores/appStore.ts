@@ -7,6 +7,7 @@ export const useAppStore = defineStore('appStore', () => {
     const isBackupOpen = ref(false)
     const isRestoreOpen = ref(false)
     const isBinariesOpen = ref(false)
+    const isAboutOpen = ref(false)
     const isDataSourceFormOpen = ref(false)
     const currentDsForm = ref<DataSource | null>(null)
     const currentOptions = ref<{
@@ -33,6 +34,11 @@ export const useAppStore = defineStore('appStore', () => {
     function openBinaries(): void {
 
         isBinariesOpen.value = true
+    }
+
+    function openAbout(): void {
+
+        isAboutOpen.value = true
     }
 
     async function getBinaries(): Promise<BinaryInfo[]> {
@@ -62,8 +68,10 @@ export const useAppStore = defineStore('appStore', () => {
         currentOptions,
         openBackup,
         getBinaries,
+        isAboutOpen,
         openDataSourceForm,
         currentDsForm,
+        openAbout,
         isDataSourceFormOpen
     }
 })

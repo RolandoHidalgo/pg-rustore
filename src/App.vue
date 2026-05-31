@@ -8,6 +8,7 @@ import RestoreDrawer from "@/components/forms/RestoreDrawer.vue";
 import {listen} from '@tauri-apps/api/event';
 import {onMounted} from "vue";
 import {useAppStore} from "@/stores/appStore.ts";
+import AboutDialog from "@/components/AboutDialog.vue";
 
 const store = useAppStore();
 onMounted(()=>{
@@ -30,6 +31,7 @@ onMounted(()=>{
     <BinaryInstaller/>
     <!--    <DeleteDatasourceDialog />-->
     <!--    <AboutDialog />-->
+    <AboutDialog/>
     <!--    <SyncDialog />-->
   </div>
 </template>
