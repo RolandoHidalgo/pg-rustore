@@ -33,16 +33,31 @@
             "dialog:allow-open"
           ]
         }
+      ]
+    }
+  },
+  "plugins": {
+    "updater": {
+      "windows": {
+        "installMode": "passive"
+      },
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDZENDBFNzU2QzJBMDAwQkUKUldTK0FLRENWdWRBYlhJT1pZVU5pSjlha3VmaktKSWJhT3FaT3Y0WW1QU3BMUWJNTFpEWXNKcDgK",
+      "endpoints": [
 
+
+        "https://github.com/RolandoHidalgo/pg-rustore/releases/latest/download/latest.json"
       ]
     }
   },
   "bundle": {
+    "createUpdaterArtifacts": true,
     "active": true,
     "targets": "all",
     "fileAssociations": [
       {
-        "ext": ["backup"],
+        "ext": [
+          "backup"
+        ],
         "description": "postgresql backup file",
         "role": "Editor"
       }
@@ -55,5 +70,4 @@
       "icons/icon.ico"
     ]
   }
-
 }
