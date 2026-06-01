@@ -1,14 +1,14 @@
-use std::env::home_dir;
-use std::fs;
 use crate::binaries::{
     download_with_progress, extract_tar_gz, get_downloaded_binaries, github_client, Release,
 };
 use crate::config::{
     find_binaries, load_config, save_config, BinaryInfo, Config, DataSource, DataSourceConfig,
 };
-use crate::tasks::{LocalTasker, RestoreOptions, Tasker};
+use crate::tasks::{BackupInfo, LocalTasker, RestoreOptions, Tasker};
 use reqwest::header::{ACCEPT, USER_AGENT};
 use serde::Serialize;
+use std::env::home_dir;
+use std::fs;
 use std::path::Path;
 use tauri::ipc::Channel;
 
@@ -55,11 +55,14 @@ pub async fn restore(
     on_event: Channel<DownloadEvent>,
 ) {
     let config: Config = load_config();
-    let ds = config
-        .datasources
-        .iter()
-        .find(|d| d.name == ds_name)
-        .unwrap();
+
+    let valid = if ds_name.is_empty() {
+        config.general.active_ds
+    } else {
+        ds_name
+    };
+
+    let ds = config.datasources.iter().find(|d| d.name == valid).unwrap();
     let tasker = LocalTasker::new(ds);
     tasker.restore(restore_options, &on_event);
 }
@@ -74,6 +77,19 @@ pub fn list_db(name: String) -> Result<Vec<String>, String> {
         Err(_) => Err("Error genérico al listar bases de datos".to_string()),
     }
 }
+
+#[tauri::command]
+pub fn backup_info(path: String) -> Result<BackupInfo, String> {
+    let config: Config = load_config();
+    let name = config.general.active_ds;
+    let ds = config.datasources.iter().find(|d| d.name == name).unwrap();
+    let tasker = LocalTasker::new(ds);
+    match tasker.parse_backup(path) {
+        Ok(info) => Ok(info),
+        Err(_) => Err("Error genérico al parsear backups".to_string()),
+    }
+}
+
 #[tauri::command]
 pub fn list_db_schemas(db_name: String, ds_name: String) -> Vec<String> {
     let config: Config = load_config();
@@ -115,7 +131,7 @@ pub fn get_binaries() -> Vec<BinaryInfo> {
             binary: format!("{}/{}/bin", base_path.to_str().unwrap(), bin),
         })
         .collect();
-    
+
     let mut locals = find_binaries(&base_paths_arch);
     locals.extend(installed);
     locals
@@ -211,33 +227,37 @@ pub async fn download_bin(url: String, name: String, on_event: Channel<DownloadE
         .await
         .unwrap();
     let home = home_dir();
-    let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/bins/").join(name);
-    extract_tar_gz(base_path.to_str().unwrap())
-        .expect("TODO: panic message");
+    let base_path = Path::new(home.unwrap().as_path())
+        .join("pgrustore/bins/")
+        .join(name);
+    extract_tar_gz(base_path.to_str().unwrap()).expect("TODO: panic message");
     //let path = Path::new("C:/Users/rolan/pgrustore/bins/").join(name.as_str());
     fs::remove_file(base_path).unwrap();
     on_event
         .send(DownloadEvent::Finished {
             msg: "completo".to_string(),
-        }).unwrap();
+        })
+        .unwrap();
 }
 
 #[tauri::command]
 pub fn remove_bin(name: String, on_event: Channel<DownloadEvent>) {
-
     //format!("C:/Users/rolan/pgrustore/bins/{}", name).as_str()
     on_event
         .send(DownloadEvent::Started {
             msg: "iniciado".to_string(),
-        }).unwrap();
+        })
+        .unwrap();
     let home = home_dir();
 
-    let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/bins/").join(name.strip_suffix(".tar.gz").unwrap());
-
+    let base_path = Path::new(home.unwrap().as_path())
+        .join("pgrustore/bins/")
+        .join(name.strip_suffix(".tar.gz").unwrap());
 
     fs::remove_dir_all(base_path).unwrap();
     on_event
         .send(DownloadEvent::Finished {
             msg: "completo".to_string(),
-        }).unwrap();
+        })
+        .unwrap();
 }

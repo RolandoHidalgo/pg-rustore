@@ -25,13 +25,11 @@ import {
   SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet'
-//import RestoreConsole from '@renderer/components/restore-console.vue'
+
 
 import {Switch} from '@/components/ui/switch'
 
 
-// import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
-// import { CalendarIcon, Info } from 'lucide-vue-next'
 import NewDbForm from "@/components/forms/NewDbForm.vue";
 import DatasourceSelect from "@/components/dataSources/DatasourceSelect.vue";
 import DbSelect from "@/components/forms/DbSelect.vue";
@@ -39,10 +37,7 @@ import FileDialogField from "@/components/forms/FileDialogField.vue";
 import {Channel, invoke} from "@tauri-apps/api/core";
 import {DownloadEvent, NewDbOptions, RestoreOptions} from "@/types";
 import RestoreConsole from "@/components/forms/restore-console.vue";
-//import useBackupInfo from '@/composables/useBackupInfo'
-//import useRestoreOnInitApi from '@/composables/useRestoreOnInitApi'
-//import useRestoreCloneApi from '@/composables/useRestoreCloneApi'
-//import { useConexionStore } from '@/stores/conexionStore'
+
 
 const store = useAppStore()
 const isConsoleOpen = ref(false)
@@ -79,18 +74,31 @@ const coneccionSchema = z.object({
       .min(1, {message: 'no vacio'})
 })
 
+const onInitConnSchema = z.object({
+
+  dsName: z
+      .string({
+        required_error: 'Requerido.'
+      })
+      .min(1, {message: 'no vacio'})
+})
+
 
 const currentSchema = ref(coneccionSchema);
 
 const finalSchema = computed(() => {
   let schema = toValue(currentSchema)
+  if (store.currentOptions.dsName.length === 0) {
+    schema = schema.merge(onInitConnSchema)
+  }
+
   if (newDb.value) {
     schema = schema.merge(newDbSchema)
   }
 
   return schema.passthrough()
 })
-const {handleSubmit, values, resetForm,setFieldValue} = useForm({
+const {handleSubmit, values, resetForm, setFieldValue} = useForm({
   validationSchema: computed(() => toTypedSchema(finalSchema.value)),
   keepValuesOnUnmount: true
 })
@@ -98,29 +106,11 @@ const {handleSubmit, values, resetForm,setFieldValue} = useForm({
 const isRestoreClone = ref(false);
 // const backupInfo = useBackupInfo()
 // const {isRestoreOnInit} = useRestoreOnInitApi(currentSchema)
-const isRestoreOnInit = ref(false)
+const isRestoreOnInit = store.currentOptions.dsName.length === 0;
 
-
-const isFileSelected = computed(() => {
-  return values.backupPath && values.backupPath !== ''
-})
 
 const onEvent = new Channel<DownloadEvent>();
 const onSubmit = handleSubmit(async (values) => {
-  // if (!isConsoleOpen.value) {
-  //   isRestoring.value = true
-  //   const fileInputElement = document.getElementById('file_input')
-  //
-  //   if (isRestoreClone.value) {
-  //     store.cloneDb(values)
-  //   } else {
-  //     store.restoreDb(values, newDb.value, fileInputElement?.files?.[0])
-  //   }
-  //
-  //   isConsoleOpen.value = true
-  // } else {
-  //   store.isRestoreOpen = false
-  // }
 
 
   const dbOptions = newDb.value ? ({
@@ -136,7 +126,7 @@ const onSubmit = handleSubmit(async (values) => {
     restoreOptions: RestoreOptions,
     onEvent: Channel<DownloadEvent>
   } = {
-    dsName: store.currentOptions.dsName,
+    dsName: currentDsName.value,
     restoreOptions: {
       backup: values.backupPath,
       db_name: values.dbName,
@@ -146,6 +136,7 @@ const onSubmit = handleSubmit(async (values) => {
   }
   isConsoleOpen.value = true;
   isRestoring.value = true;
+  console.log(params)
   await invoke("restore", params);
 })
 
@@ -160,25 +151,16 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
-  if (store.currentOptions.backupPath && store.currentOptions.backupPath!=='') {
-    setFieldValue('backupPath',store.currentOptions.backupPath)
+  if (store.currentOptions.backupPath && store.currentOptions.backupPath !== '') {
+    setFieldValue('backupPath', store.currentOptions.backupPath)
   }
 })
-const currentDsName = computed(() => {
+const currentDsName = computed<string>(() => {
 
-  return store.currentOptions.dsName
+  return store.currentOptions.dsName.length > 0 ? store.currentOptions.dsName : values.dsName as string;
 })
 
 
-function handleDone() {
-  isRestoring.value = false
-  // if (isRestoreClone.value||newDb.value) {
-  //   useConexionStore().loadDbs()
-  // }
-  if (newDb.value) {
-    //useConexionStore().loadDbs()
-  }
-}
 </script>
 
 <template>
@@ -186,9 +168,9 @@ function handleDone() {
     <SheetTrigger></SheetTrigger>
     <SheetContent side="bottom" class="rounded-t-lg">
       <SheetHeader class="pb-0">
-        <SheetTitle>Restaurar backup {{ newDb }}</SheetTitle>
+        <SheetTitle>Restaurar backup</SheetTitle>
         <SheetDescription> LLene los campos</SheetDescription>
-        <div v-if="store.currentOptions.backupPath">{{ store.currentOptions.backupPath }}</div>
+<!--        <div v-if="store.currentOptions.backupPath">{{ store.currentOptions.backupPath }}</div>-->
       </SheetHeader>
       <form class="w-full flex flex-col pb-0" @submit="onSubmit">
         <CardContent class="grid grid-cols-2 gap-2 overflow-y-auto pb-0" v-if="!isConsoleOpen">
@@ -212,7 +194,7 @@ function handleDone() {
           <div v-if="isRestoreOnInit" class="col-span-2">
             <DatasourceSelect/>
           </div>
-          <div  v-if="!newDb">
+          <div v-if="!newDb" class="col-span-2">
             <DbSelect :ds-name="currentDsName ?? ''"/>
           </div>
 

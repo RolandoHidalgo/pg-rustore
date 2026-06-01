@@ -20,9 +20,9 @@ pub fn run() {
 
             if args.len() > 1 {
                 let file_path = &args[1];
-
-                println!("Archivo abierto: {}", file_path);
-                window.emit("open-file", file_path).unwrap();
+                let simple = file_path.replace("\\\\", "\\");
+                println!("Archivo abierto: {}", simple);
+                window.emit("open-file", simple).unwrap();
             }
         })
         .plugin(tauri_plugin_opener::init())
@@ -41,6 +41,7 @@ pub fn run() {
             commands::download_bin,
             commands::remove_bin,
             commands::restore,
+            commands::backup_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

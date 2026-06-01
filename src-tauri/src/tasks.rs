@@ -1,6 +1,7 @@
 use crate::commands::DownloadEvent;
 use crate::config::{load_config, Config, DataSource};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::io::{BufRead, BufReader};
 use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
@@ -31,7 +32,10 @@ fn spawn_builder<P: AsRef<Path>>(
     envs: Option<Vec<(String, String)>>,
 ) -> Command {
     let mut cmd = Command::new(bin.as_ref());
-    cmd.args(args).stdout(Stdio::piped()).stderr(Stdio::piped()).creation_flags(CREATE_NO_WINDOW);
+    cmd.args(args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .creation_flags(CREATE_NO_WINDOW);
     if let Some(dir) = cwd {
         cmd.current_dir(dir);
     }
@@ -43,6 +47,26 @@ fn spawn_builder<P: AsRef<Path>>(
     cmd
 }
 
+#[derive(Debug, Serialize)]
+pub struct BackupInfo {
+    pub fecha: String,
+    pub entries: u32,
+    pub db_version: String,
+    pub pg_dump_version: String,
+    pub db_name: String,
+}
+
+fn get_value_after_double_points(line: &str, split_pattern: &str) -> String {
+    line.split(split_pattern)
+        .nth(1)
+        .unwrap_or("")
+        .trim()
+        .split('\r')
+        .next()
+        .unwrap_or("")
+        .to_string()
+}
+
 pub trait Tasker {
     fn backup(&self, db_name: String, schema_name: String, on_event: &Channel<DownloadEvent>);
 
@@ -50,11 +74,22 @@ pub trait Tasker {
     fn create_db(&self, restore_options: &RestoreOptions, on_event: &Channel<DownloadEvent>);
     fn list_db(&self) -> Result<Vec<String>, ()>;
     fn list_db_schemas(&self, db_name: String) -> Vec<String>;
+    fn parse_backup(&self, path: String) -> Result<BackupInfo, ()>;
 }
 
 pub struct LocalTasker<'a> {
     pub data_source: &'a DataSource,
 }
+
+// fn run_command<P: AsRef<Path>>(
+//     bin: P,
+//     args: Vec<&str>,
+//     cwd: Option<P>,
+//     envs: Option<Vec<(String, String)>>,
+// ) -> Cow<str> {
+//     let out = spawn_builder(bin, args, cwd, envs).output().unwrap();
+//      String::from_utf8_lossy(out.clone().stdout)
+// }
 
 impl<'a> LocalTasker<'a> {
     pub fn new(data_source: &'a DataSource) -> Self {
@@ -99,7 +134,7 @@ impl<'a> Tasker for LocalTasker<'a> {
             args.push(&schema_name);
         }
         // Finalmente el nombre de la base
-         args.push(&db_name);
+        args.push(&db_name);
 
         let mut child = spawn_builder(
             bin,
@@ -110,8 +145,8 @@ impl<'a> Tasker for LocalTasker<'a> {
                 self.data_source.password.as_str().into(),
             )]),
         )
-            .spawn()
-            .unwrap();
+        .spawn()
+        .unwrap();
 
         on_event
             .send(DownloadEvent::Started {
@@ -154,10 +189,12 @@ impl<'a> Tasker for LocalTasker<'a> {
             })
             .unwrap();
         if let Some(new_db_options) = &restore_options.new_db_options {
-            println!("crear db {} {} {}", new_db_options.encoding, new_db_options.template, restore_options.db_name);
+            println!(
+                "crear db {} {} {}",
+                new_db_options.encoding, new_db_options.template, restore_options.db_name
+            );
             self.create_db(&restore_options, on_event);
         }
-
 
         let bin = format!("{}{}", self.data_source.bin, "/pg_restore.exe");
         let path = PathBuf::from(&restore_options.backup);
@@ -188,9 +225,8 @@ impl<'a> Tasker for LocalTasker<'a> {
                 self.data_source.password.as_str().into(),
             )]),
         )
-            .spawn()
-            .unwrap();
-
+        .spawn()
+        .unwrap();
 
         // Obtenemos el pipe de salida
         let stdout = child.stderr.take().expect("no se pudo capturar stdout");
@@ -218,7 +254,6 @@ impl<'a> Tasker for LocalTasker<'a> {
                 msg: "finalizado".to_string(),
             })
             .unwrap();
-
     }
     fn create_db(&self, restore_options: &RestoreOptions, on_event: &Channel<DownloadEvent>) {
         let bin = format!("{}{}", self.data_source.bin, "/createdb.exe");
@@ -255,9 +290,8 @@ impl<'a> Tasker for LocalTasker<'a> {
                 self.data_source.password.as_str().into(),
             )]),
         )
-            .spawn()
-            .unwrap();
-
+        .spawn()
+        .unwrap();
 
         // Obtenemos el pipe de salida
         let stdout = child.stderr.take().expect("no se pudo capturar stdout");
@@ -305,8 +339,8 @@ impl<'a> Tasker for LocalTasker<'a> {
                 self.data_source.password.as_str().into(),
             )]),
         )
-            .output()
-            .unwrap();
+        .output()
+        .unwrap();
 
         if !out.status.success() || !out.stderr.is_empty() {
             return Err(());
@@ -362,8 +396,8 @@ impl<'a> Tasker for LocalTasker<'a> {
                 self.data_source.password.as_str().into(),
             )]),
         )
-            .output()
-            .unwrap();
+        .output()
+        .unwrap();
         let stdout_str = String::from_utf8_lossy(&out.stdout);
 
         let mut schemas: Vec<String> = Vec::new();
@@ -386,6 +420,59 @@ impl<'a> Tasker for LocalTasker<'a> {
         }
 
         schemas
+    }
+
+    fn parse_backup(&self, path: String) -> Result<BackupInfo, ()> {
+        let bin = format!("{}{}", self.data_source.bin, "/pg_restore.exe");
+
+        let args: Vec<&str> = vec!["-l", &path];
+
+        let out = spawn_builder(
+            bin,
+            args,
+            None,
+            Some(vec![(
+                "PGPASSWORD".into(),
+                self.data_source.password.as_str().into(),
+            )]),
+        )
+        .output()
+        .unwrap();
+
+        let stdout = String::from_utf8_lossy(&out.stdout);
+
+        let info_lines: Vec<&str> = stdout
+            .lines()
+            .filter(|line| line.trim().starts_with(';'))
+            .collect();
+
+        let mut info = BackupInfo {
+            fecha: String::new(),
+            entries: 0,
+            db_version: String::new(),
+            pg_dump_version: String::new(),
+            db_name: String::new(),
+        };
+
+        for line in info_lines {
+            if line.contains("pg_dump") {
+                info.pg_dump_version = get_value_after_double_points(line, ":");
+            } else if line.contains("database") {
+                info.db_version = get_value_after_double_points(line, ":");
+            } else if line.contains("Entries") && info.entries == 0 {
+                info.entries = get_value_after_double_points(line, ":")
+                    .parse::<u32>()
+                    .unwrap_or(0);
+            } else if line.contains("created at") {
+                if let Some(rest) = line.split("created at").nth(1) {
+                    info.fecha = rest.split('\r').next().unwrap_or("").trim().to_string();
+                }
+            } else if line.contains("dbname") {
+                info.db_name = get_value_after_double_points(line, ":");
+            }
+        }
+
+        Ok(info)
     }
 }
 fn get_formatted_date_time() -> String {

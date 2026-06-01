@@ -1,16 +1,16 @@
-use std::env::home_dir;
+use crate::commands::DownloadEvent;
 use crate::config::BinaryInfo;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use reqwest::{header::USER_AGENT, Client};
 use serde::{Deserialize, Serialize};
+use std::env::home_dir;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use tar::Archive;
 use tauri::ipc::Channel;
-use crate::commands::DownloadEvent;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Release {
@@ -38,13 +38,12 @@ pub fn github_client() -> Client {
 pub async fn download_with_progress(
     url: &str,
     dest_path: &str,
-    on_event: &Channel<DownloadEvent>
+    on_event: &Channel<DownloadEvent>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-
     let home = home_dir();
-    
+
     let client = Client::new();
-    
+
     let resp = client
         .get(url)
         .header(USER_AGENT, "rolando-rust-client")
@@ -59,13 +58,15 @@ pub async fn download_with_progress(
         .and_then(|s| s.parse::<u64>().ok())
         .unwrap_or(0);
 
+    on_event.send(DownloadEvent::Started {
+        msg: "iniciado".to_string(),
+    })?;
 
-    on_event
-        .send(DownloadEvent::Started {
-            msg: "iniciado".to_string(),
-        })?;
-
-    let mut file = File::create(Path::new(home.unwrap().as_path()).join("pgrustore/bins/").join(dest_path))?;
+    let mut file = File::create(
+        Path::new(home.unwrap().as_path())
+            .join("pgrustore/bins/")
+            .join(dest_path),
+    )?;
     let mut downloaded: u64 = 0;
 
     let mut stream = resp.bytes_stream();
@@ -77,16 +78,12 @@ pub async fn download_with_progress(
         if total_size > 0 {
             let percent = (downloaded as f64 / total_size as f64) * 100.0;
 
-            on_event
-                .send(DownloadEvent::Progress {
-                    msg: percent.to_string(),
-                })?;
+            on_event.send(DownloadEvent::Progress {
+                msg: percent.to_string(),
+            })?;
         } else {
-
         }
     }
-
-
 
     Ok(())
 }
@@ -135,10 +132,13 @@ pub fn remove_dir(name: String) {
     {
         let home = home_dir();
         let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/bins/");
-        
+
         let path = base_path.join(found);
         fs::remove_dir_all(path).unwrap();
     } else {
         println!("No se encontró ese elemento");
     }
 }
+
+
+
