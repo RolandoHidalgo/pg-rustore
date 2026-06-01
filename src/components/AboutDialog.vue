@@ -2,7 +2,7 @@
 
 
 import {GithubLogoIcon} from '@radix-icons/vue'
-import {ref} from 'vue'
+import {onMounted, ref} from 'vue'
 import {ReloadIcon} from '@radix-icons/vue'
 import {
   Sheet,
@@ -19,6 +19,7 @@ import {Button} from "@/components/ui/button";
 import {Avatar, AvatarFallback} from "@/components/ui/avatar";
 import {check} from '@tauri-apps/plugin-updater';
 import {relaunch} from '@tauri-apps/plugin-process';
+import {getVersion} from '@tauri-apps/api/app';
 
 const store = useAppStore()
 
@@ -30,12 +31,12 @@ const downloaded = ref(0);
 const contentLength = ref(0);
 
 
-const progresData = ref({
-  bps: null, percent: null, total: null, transferred: null
-})
+
 
 const porciento = ref(0);
-
+onMounted(async () => {
+  version.value = await getVersion();
+})
 const checkUpdates = async () => {
 
   porciento.value = 0;

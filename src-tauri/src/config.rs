@@ -1,7 +1,7 @@
-use std::env::home_dir;
 use serde::{Deserialize, Serialize};
+use std::env::home_dir;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -36,17 +36,29 @@ pub fn load_config() -> Config {
     let home = home_dir();
 
     let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/config.toml");
-    
+
     //let path = Path::new("C:/Users/rolan/pgrustore/config.toml");
     let content = fs::read_to_string(base_path).expect("No se pudo leer el archivo");
     toml::from_str(&content).expect("Error al parsear TOML")
 }
 
+// pub fn pp(a: &PathBuf) -> i32 {
+//     2
+// }
+//
+
+//codigo que no funciona demostrando que no se puede devolver una referencia a una variable local;
+// pub fn ss(a: i32) -> &'static PathBuf {
+//     let base_path = Path::new("").join("pgrustore/config.toml");
+//
+//     &base_path
+// }
+
 pub fn save_config(cfg: &Config) {
     let home = home_dir();
 
-    let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/config.toml"); 
-    
+    let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/config.toml");
+
     //let path = Path::new("C:/Users/rolan/pgrustore/config.toml");
     let new_content = toml::to_string_pretty(&cfg).expect("Error al serializar TOML");
     fs::write(base_path, new_content).expect("NO se pudo guarda la config");
