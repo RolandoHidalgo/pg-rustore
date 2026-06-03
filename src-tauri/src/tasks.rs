@@ -330,7 +330,9 @@ impl<'a> Tasker for LocalTasker<'a> {
             "-c",
             "\\l",
         ];
-        let out = spawn_builder(
+        println!("antes del spawn");
+
+        match spawn_builder(
             bin,
             args,
             None,
@@ -340,34 +342,40 @@ impl<'a> Tasker for LocalTasker<'a> {
             )]),
         )
         .output()
-        .unwrap();
+        {
+            Ok(out) => {
+                if !out.status.success() || !out.stderr.is_empty() {
+                    return Err(());
+                }
+                // error genérico
 
-        if !out.status.success() || !out.stderr.is_empty() {
-            return Err(());
-        }
-        // error genérico
+                let stdout_str = String::from_utf8_lossy(&out.stdout);
+                let mut dbs: Vec<String> = Vec::new();
 
-        let stdout_str = String::from_utf8_lossy(&out.stdout);
-        let mut dbs: Vec<String> = Vec::new();
-
-        for line in stdout_str.lines() {
-            // saltamos encabezados y separadores
-            if line.contains('|')
-                && !line.contains("Name")
-                && !line.contains("Nombre")
-                && !line.starts_with('-')
-            {
-                // primera columna antes del primer '|'
-                if let Some(first_col) = line.split('|').next() {
-                    let db_name = first_col.trim();
-                    if !db_name.is_empty() && db_name != "template0" && db_name != "template1" {
-                        dbs.push(db_name.to_string());
+                for line in stdout_str.lines() {
+                    // saltamos encabezados y separadores
+                    if line.contains('|')
+                        && !line.contains("Name")
+                        && !line.contains("Nombre")
+                        && !line.starts_with('-')
+                    {
+                        // primera columna antes del primer '|'
+                        if let Some(first_col) = line.split('|').next() {
+                            let db_name = first_col.trim();
+                            if !db_name.is_empty()
+                                && db_name != "template0"
+                                && db_name != "template1"
+                            {
+                                dbs.push(db_name.to_string());
+                            }
+                        }
                     }
                 }
-            }
-        }
 
-        Ok(dbs)
+                Ok(dbs)
+            }
+            Err(e) => return Err(()),
+        }
     }
 
     fn list_db_schemas(&self, db_name: String) -> Vec<String> {

@@ -106,3 +106,35 @@ pub fn find_binaries(base_paths_arch: &[&Path]) -> Vec<BinaryInfo> {
         })
         .collect()
 }
+
+pub fn ensure_config_exist() -> std::io::Result<()> {
+    let mut base_path = home_dir().unwrap();
+    base_path.push("pgrustore");
+
+    let backups = base_path.join("backups");
+
+    fs::create_dir_all(&backups)?;
+
+    let config_path = base_path.join("config.toml");
+
+    if !config_path.exists() {
+        let c = Config {
+            datasources: vec![DataSource {
+                name: String::from("default"),
+                bin: String::from(""),
+                host: String::from("localhost"),
+                port: 5432,
+                user: String::from("postgres"),
+                password: String::from(""),
+                is_active: true,
+                is_ssh: false,
+            }],
+            general: General {
+                active_ds: String::from("default"),
+            },
+        };
+        let new_content = toml::to_string_pretty(&c).expect("Error al serializar TOML");
+        fs::write(&config_path, new_content)?
+    }
+    Ok(())
+}
