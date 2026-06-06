@@ -1,7 +1,7 @@
 use crate::commands::DownloadEvent;
-use crate::config::{load_config, Config, DataSource};
+use crate::config::{ DataSource};
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
+
 use std::io::{BufRead, BufReader};
 use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
@@ -173,7 +173,7 @@ impl<'a> Tasker for LocalTasker<'a> {
             buf.clear();
         }
         // Esperamos a que termine el proceso
-        let status = child.wait().expect("error al esperar");
+       // let status = child.wait().expect("error al esperar");
 
         on_event
             .send(DownloadEvent::Finished {
@@ -247,7 +247,7 @@ impl<'a> Tasker for LocalTasker<'a> {
             buf.clear();
         }
         // Esperamos a que termine el proceso
-        let status = child.wait().expect("error al esperar");
+        //let status = child.wait().expect("error al esperar");
 
         on_event
             .send(DownloadEvent::Finished {
@@ -312,7 +312,7 @@ impl<'a> Tasker for LocalTasker<'a> {
             buf.clear();
         }
         // Esperamos a que termine el proceso
-        let status = child.wait().expect("error al esperar");
+       // let status = child.wait().expect("error al esperar");
     }
 
     fn list_db(&self) -> Result<Vec<String>, ()> {
@@ -330,7 +330,7 @@ impl<'a> Tasker for LocalTasker<'a> {
             "-c",
             "\\l",
         ];
-        println!("antes del spawn");
+
 
         match spawn_builder(
             bin,
@@ -374,7 +374,7 @@ impl<'a> Tasker for LocalTasker<'a> {
 
                 Ok(dbs)
             }
-            Err(e) => return Err(()),
+            Err(_) => return Err(()),
         }
     }
 

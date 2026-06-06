@@ -1,5 +1,5 @@
 use crate::commands::DownloadEvent;
-use crate::config::BinaryInfo;
+
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use reqwest::{header::USER_AGENT, Client};
@@ -30,7 +30,7 @@ pub struct Asset {
 }
 
 pub fn github_client() -> Client {
-    let mut builder = Client::builder();
+    let  builder = Client::builder();
     let client = builder.build().expect("create client");
     // Nota: el header AUTHORIZATION se añade por request para poder alternar token/no-token.
     client
@@ -124,21 +124,21 @@ pub fn get_downloaded_binaries() -> Vec<String> {
     results
 }
 
-pub fn remove_dir(name: String) {
-    let downloaded_binaries = get_downloaded_binaries();
-    if let Some(found) = downloaded_binaries
-        .iter()
-        .find(|entry_b| name.contains(entry_b.as_str()))
-    {
-        let home = home_dir();
-        let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/bins/");
-
-        let path = base_path.join(found);
-        fs::remove_dir_all(path).unwrap();
-    } else {
-        println!("No se encontró ese elemento");
-    }
-}
+// pub fn remove_dir(name: String) {
+//     let downloaded_binaries = get_downloaded_binaries();
+//     if let Some(found) = downloaded_binaries
+//         .iter()
+//         .find(|entry_b| name.contains(entry_b.as_str()))
+//     {
+//         let home = home_dir();
+//         let base_path = Path::new(home.unwrap().as_path()).join("pgrustore/bins/");
+//
+//         let path = base_path.join(found);
+//         fs::remove_dir_all(path).unwrap();
+//     } else {
+//         println!("No se encontró ese elemento");
+//     }
+// }
 
 
 

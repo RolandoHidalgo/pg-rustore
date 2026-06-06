@@ -70,10 +70,10 @@ pub async fn restore(
 #[tauri::command]
 pub fn list_db(name: String) -> Result<Vec<String>, String> {
     let config: Config = load_config();
-    println!("config cargada");
+
     let ds = config.datasources.iter().find(|d| d.name == name).unwrap();
     let tasker = LocalTasker::new(ds);
-    println!("antes del list");
+
     match tasker.list_db() {
         Ok(dbs) => Ok(dbs),
         Err(_) => Err("Error genérico al listar bases de datos".to_string()),

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::env::home_dir;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Path};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
