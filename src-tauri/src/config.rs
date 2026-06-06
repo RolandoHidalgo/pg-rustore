@@ -113,7 +113,9 @@ pub fn ensure_config_exist() -> std::io::Result<()> {
 
     let backups = base_path.join("backups");
 
-    fs::create_dir_all(&backups)?;
+    if !backups.exists() {
+        fs::create_dir_all(&backups)?;
+    }
 
     let config_path = base_path.join("config.toml");
 

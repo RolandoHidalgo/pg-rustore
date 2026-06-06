@@ -4,6 +4,6 @@
 
 <template>
   <div>
-    <RouterView/>
+    asdadasd
   </div>
 </template>

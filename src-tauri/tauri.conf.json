@@ -17,7 +17,9 @@
         "height": 626,
         "resizable": false,
         "fullscreen": false,
-        "maximizable": false
+        "maximizable": false,
+        "label": "main",
+        "visible": true
       }
     ],
     "security": {

@@ -1,5 +1,5 @@
-use tauri::{Emitter, Manager};
 use crate::config::ensure_config_exist;
+use tauri::{Emitter, Manager};
 
 mod binaries;
 mod commands;
@@ -14,8 +14,11 @@ fn greet(name: &str) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    ensure_config_exist().expect("NO se pudo crear/cargar la config");
     tauri::Builder::default()
+        .setup(|app| {
+            ensure_config_exist().expect("NO se pudo crear/cargar la config");
+            Ok(())
+        })
         .plugin(tauri_plugin_updater::Builder::new().build())
         .on_page_load(|window, _payload| {
             let args: Vec<String> = std::env::args().collect();
