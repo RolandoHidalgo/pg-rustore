@@ -34,7 +34,8 @@
             "core:default",
             "dialog:default",
             "dialog:allow-open",
-            "updater:default"
+            "updater:default",
+            "keyring:default"
           ]
         }
       ]

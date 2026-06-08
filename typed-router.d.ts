@@ -38,9 +38,9 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/Login': RouteRecordInfo<
-      '/Login',
-      '/Login',
+    '/login': RouteRecordInfo<
+      '/login',
+      '/login',
       Record<never, never>,
       Record<never, never>,
       | never
@@ -73,9 +73,9 @@ declare module 'vue-router/auto-routes' {
       pathParamNames:
         | never
     }
-    'src/pages/Login.vue': {
+    'src/pages/login.vue': {
       routes:
-        | '/Login'
+        | '/login'
       views:
         | never
       pathParamNames:

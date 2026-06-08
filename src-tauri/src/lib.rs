@@ -19,6 +19,7 @@ pub fn run() {
             ensure_config_exist().expect("NO se pudo crear/cargar la config");
             Ok(())
         })
+
         .plugin(tauri_plugin_updater::Builder::new().build())
         .on_page_load(|window, _payload| {
             let args: Vec<String> = std::env::args().collect();
@@ -32,6 +33,7 @@ pub fn run() {
         })
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_keyring::init())
         .invoke_handler(tauri::generate_handler![
             greet,
             commands::backup,

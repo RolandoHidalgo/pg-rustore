@@ -2,8 +2,14 @@ import {defineStore} from "pinia";
 import {ref} from "vue";
 import {BinaryInfo, DataSource} from "@/types";
 import {invoke} from "@tauri-apps/api/core";
+import {deletePassword, getPassword, setPassword} from "tauri-plugin-keyring-api";
 
+
+const KEY_SERVICE_NAME = 'PG_RUSTORE'
+const KEY_USER_NAME = 'ADMIN'
+//bunconst p = await getPassword(KEY_SERVICE_NAME, KEY_USER_NAME);
 export const useAppStore = defineStore('appStore', () => {
+    const isAuth = ref(false);
     const isBackupOpen = ref(false)
     const isRestoreOpen = ref(false)
     const isBinariesOpen = ref(false)
@@ -36,6 +42,37 @@ export const useAppStore = defineStore('appStore', () => {
         isBinariesOpen.value = true
     }
 
+
+    async function getAuth() {
+        return await getPassword(KEY_SERVICE_NAME, KEY_USER_NAME);
+    }
+
+    async function login(passwd: string) {
+
+        const old = await getPassword(KEY_SERVICE_NAME, KEY_USER_NAME);
+        if (!old) {
+            await setPassword(KEY_SERVICE_NAME, KEY_USER_NAME, passwd);
+            isAuth.value = true
+            return true
+        } else {
+            const valid = old === passwd;
+            if (valid) {
+                isAuth.value = true
+            }
+            return valid;
+        }
+
+
+    }
+
+    async function deletePass() {
+
+        await deletePassword(KEY_SERVICE_NAME, KEY_USER_NAME);
+        isAuth.value = false;
+
+
+    }
+
     function openAbout(): void {
 
         isAboutOpen.value = true
@@ -53,7 +90,7 @@ export const useAppStore = defineStore('appStore', () => {
         isDataSourceFormOpen.value = true
     }
 
-    function openRestore(dsName: string,path?:string): void {
+    function openRestore(dsName: string, path?: string): void {
         currentOptions.value.dsName = dsName
         currentOptions.value.backupPath = path;
         isRestoreOpen.value = true
@@ -72,6 +109,10 @@ export const useAppStore = defineStore('appStore', () => {
         openDataSourceForm,
         currentDsForm,
         openAbout,
+        isAuth,
+        getAuth,
+        login,
+        deletePass,
         isDataSourceFormOpen
     }
 })
