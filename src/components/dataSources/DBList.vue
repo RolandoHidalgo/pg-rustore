@@ -17,12 +17,12 @@ import {
   Copy,
   MoreHorizontal,
   DatabaseBackup,
+    Trash2,
   DatabaseZap,
   AlertCircle,
   RotateCcw
 } from 'lucide-vue-next'
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert'
-
 
 
 import {
@@ -42,9 +42,9 @@ import {useAppStore} from "@/stores/appStore.ts";
 
 const props = defineProps<{ dsName: string; search: string }>()
 const dbStore = useDbStore();
-watchEffect(()=>{
-  if(props.dsName && props.dsName !=''){
-      dbStore.loadDbs(props.dsName)
+watchEffect(() => {
+  if (props.dsName && props.dsName != '') {
+    dbStore.loadDbs(props.dsName)
   }
 })
 
@@ -88,13 +88,17 @@ const appStore = useAppStore()
             <DatabaseBackup class="text-muted-foreground"/>
             <span>Backup</span>
           </DropdownMenuItem>
+          <DropdownMenuItem @click="appStore.openDrop(props.dsName, db)">
+            <Trash2 class="text-destructive"/>
+            <span>Drop</span>
+          </DropdownMenuItem>
           <DropdownMenuSeparator/>
-          <DropdownMenuItem >
+          <DropdownMenuItem>
             <DatabaseZap class="text-muted-foreground"/>
             <span>Restore</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator/>
-          <DropdownMenuItem >
+          <DropdownMenuItem>
             <Copy class="text-muted-foreground"/>
             <span>Clone to</span>
           </DropdownMenuItem>
@@ -135,7 +139,8 @@ const appStore = useAppStore()
         <TooltipProvider disable-closing-trigger>
           <Tooltip>
             <TooltipTrigger as-child>
-              <Button variant="outline" size="icon" class="text-muted-foreground/90" @click="dbStore.loadDbs(props.dsName)">
+              <Button variant="outline" size="icon" class="text-muted-foreground/90"
+                      @click="dbStore.loadDbs(props.dsName)">
                 <RotateCcw/>
               </Button>
             </TooltipTrigger>

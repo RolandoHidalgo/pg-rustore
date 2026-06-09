@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import {computed, HTMLAttributes, ref} from "vue"
 import {cn} from "@/lib/utils"
+
+
+import {GalleryVerticalEnd, LoaderIcon} from 'lucide-vue-next'
 import {Button} from "@/components/ui/button"
 import {
   Card,
@@ -10,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
-  Field,
+  Field, FieldDescription,
 
   FieldGroup,
   FieldLabel,
@@ -22,7 +25,7 @@ import {useRouter} from "vue-router";
 const props = defineProps<{
   class?: HTMLAttributes["class"]
 }>()
-
+const deleting = ref(false);
 const router = useRouter();
 const store = useAppStore();
 const passwd = ref('')
@@ -33,35 +36,56 @@ const loading = ref(false);
 
 async function login() {
   loading.value = true;
-  const valid = await store.login(passwd.value);
-  console.log(valid);
-  loading.value = false;
-  if (valid) {
-    console.log("valid")
-    router.push("/")
+  try {
+    const valid = await store.login(passwd.value);
+    console.log(valid);
+    loading.value = false;
+    if (valid) {
+      console.log("valid")
+      router.push("/")
+    }
+  } finally {
+    loading.value = false
   }
 }
 
 async function deletePassword() {
-  await store.deletePass()
+  try {
+    deleting.value = true
+    await store.deletePass()
+    deleting.value = false;
+  } catch (e) {
+
+  } finally {
+
+    deleting.value = false;
+  }
 }
 </script>
 
 <template>
-  <div class="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-    <div class="w-full max-w-sm">
-      <!--     form-->
+  <div class="bg-muted flex min-h-svh flex-col items-center justify-center gap-6 p-4 md:p-10">
+    <div class="flex w-full max-w-sm flex-col gap-6">
+      <a href="#" class="flex items-center gap-2 self-center font-medium">
+        <div class="bg-primary text-primary-foreground flex size-6 items-center justify-center rounded-md">
+          <GalleryVerticalEnd class="size-4"/>
+        </div>
+        PG_RUSTORE.
+      </a>
       <div :class="cn('flex flex-col gap-6', props.class)">
         <Card>
-          <CardHeader>
-            <CardTitle>Login</CardTitle>
+          <CardHeader class="text-center">
+            <CardTitle class="text-xl">
+              Bienvenido
+            </CardTitle>
             <CardDescription>
-              Ponga un password
+              Use su clave maestra para acceder.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form @submit.prevent="login">
               <FieldGroup>
+
 
                 <Field>
                   <div class="flex items-center">
@@ -74,27 +98,35 @@ async function deletePassword() {
                       id="password"
                       type="password"
                       v-model="passwd"
-                  />
+                      required/>
                 </Field>
                 <Field>
                   <Button type="submit" :disabled="!isValidForm">
+                    <LoaderIcon v-if="loading"
+                                role="status"
+                                aria-label="Loading"
+                                class="size-4 animate-spin"
+                    />
                     Login
                   </Button>
-                  <Button variant="outline" type="button" @click="deletePassword">
-                    delete passwrod
+                  <Button type="button" variant="outline" @click="deletePassword">
+                    <LoaderIcon v-if="deleting"
+                                role="status"
+                                aria-label="Loading"
+                                class="size-4 animate-spin"
+                    />
+                    Delete password
                   </Button>
+                  <FieldDescription class="text-center">
+                    La primera vez se establecerá la contraseña maestra
 
-                  <!--                  <FieldDescription class="text-center">-->
-                  <!--                    Don't have an account?-->
-                  <!--                    <a href="#">-->
-                  <!--                      Sign up-->
-                  <!--                    </a>-->
-                  <!--                  </FieldDescription>-->
+                  </FieldDescription>
                 </Field>
               </FieldGroup>
             </form>
           </CardContent>
         </Card>
+
       </div>
     </div>
   </div>

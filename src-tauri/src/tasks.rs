@@ -1,6 +1,7 @@
 use crate::commands::DownloadEvent;
-use crate::config::{ DataSource};
+use crate::config::DataSource;
 use serde::{Deserialize, Serialize};
+use std::env::home_dir;
 
 use std::io::{BufRead, BufReader};
 use std::os::windows::process::CommandExt;
@@ -69,6 +70,7 @@ fn get_value_after_double_points(line: &str, split_pattern: &str) -> String {
 
 pub trait Tasker {
     fn backup(&self, db_name: String, schema_name: String, on_event: &Channel<DownloadEvent>);
+    fn drop(&self, db_name: String, schema_name: String, on_event: &Channel<DownloadEvent>);
 
     fn restore(&self, restore_options: RestoreOptions, on_event: &Channel<DownloadEvent>);
     fn create_db(&self, restore_options: &RestoreOptions, on_event: &Channel<DownloadEvent>);
@@ -173,7 +175,91 @@ impl<'a> Tasker for LocalTasker<'a> {
             buf.clear();
         }
         // Esperamos a que termine el proceso
-       // let status = child.wait().expect("error al esperar");
+        // let status = child.wait().expect("error al esperar");
+
+        on_event
+            .send(DownloadEvent::Finished {
+                msg: "finalizado".to_string(),
+            })
+            .unwrap();
+    }
+
+    fn drop(&self, db_name: String, schema_name: String, on_event: &Channel<DownloadEvent>) {
+        //`${dbName}${schemmaName}_${getFormattedDateTime()}.backup`
+        let schema_suffix = if schema_name.is_empty() {
+            String::new()
+        } else {
+            format!("_{}", schema_name)
+        };
+     //   let base_path = Path::new(home_dir().unwrap().as_path()).join("pgrustore/backups");
+        // let backup_path = format!(
+        //     "{}/{}{}_{}.backup",
+        //     base_path.display(),
+        //     db_name,
+        //     schema_suffix,
+        //     get_formatted_date_time()
+        // );
+        let bin = format!("{}{}", self.data_source.bin, "/dropdb.exe");
+
+        let port = &self.data_source.port.to_string();
+        //let params = `--file ${path.normalize(backupPath)} --host ${host} --port ${port} --username ${user} --format=c --verbose${schammaParams} ${dbName}`
+        // 🔹 Construimos los argumentos
+        let mut args = vec![
+
+            "--host",
+            &self.data_source.host,
+            "--port",
+            port,
+            "--username",
+            &self.data_source.user,
+            "-f",
+        ];
+
+        // if !schema_name.is_empty() {
+        //     args.push("--schema");
+        //     args.push(&schema_name);
+        // }
+        // Finalmente el nombre de la base
+        args.push(&db_name);
+
+        let mut child = spawn_builder(
+            bin,
+            args,
+            None,
+            Some(vec![(
+                "PGPASSWORD".into(),
+                self.data_source.password.as_str().into(),
+            )]),
+        )
+        .spawn()
+        .unwrap();
+
+        on_event
+            .send(DownloadEvent::Started {
+                msg: "iniciado".to_string(),
+            })
+            .unwrap();
+
+        // Obtenemos el pipe de salida
+        let stdout = child.stderr.take().expect("no se pudo capturar stdout");
+        // Lo envolvemos en un BufReader para leer línea por línea
+        let mut reader = BufReader::new(stdout);
+
+        let mut buf = Vec::new();
+        while let Ok(n) = reader.read_until(b'\n', &mut buf) {
+            if n == 0 {
+                break;
+            }
+
+            on_event
+                .send(DownloadEvent::Progress {
+                    msg: String::from_utf8_lossy(&buf).to_string(),
+                })
+                .unwrap();
+            buf.clear();
+        }
+        // Esperamos a que termine el proceso
+        // let status = child.wait().expect("error al esperar");
 
         on_event
             .send(DownloadEvent::Finished {
@@ -312,7 +398,7 @@ impl<'a> Tasker for LocalTasker<'a> {
             buf.clear();
         }
         // Esperamos a que termine el proceso
-       // let status = child.wait().expect("error al esperar");
+        // let status = child.wait().expect("error al esperar");
     }
 
     fn list_db(&self) -> Result<Vec<String>, ()> {
@@ -330,7 +416,6 @@ impl<'a> Tasker for LocalTasker<'a> {
             "-c",
             "\\l",
         ];
-
 
         match spawn_builder(
             bin,

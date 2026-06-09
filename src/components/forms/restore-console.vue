@@ -9,6 +9,9 @@ const props = defineProps<{ channel: Channel<DownloadEvent> }>()
 const element = ref(null)
 const messages = ref<string[]>([])
 const status = ref<DownloadEvent["event"] | 'unstarted'>('unstarted')
+const emit = defineEmits<{
+  done: []
+}>()
 onMounted(() => {
   props.channel.onmessage = (message) => {
 
@@ -27,6 +30,7 @@ onMounted(() => {
         status.value = 'finished'
         messages.value.push(message.data.msg + '\n')
         setTimeout(updateScroll, 50)
+        emit('done');
         break;
       }
     }
@@ -39,10 +43,12 @@ onMounted(() => {
 function updateScroll() {
   element.value.scrollTo({behavior: 'auto', top: Number(element.value.scrollHeight)})
 }
+
 </script>
 
 <template>
   <div>
+    {{ status }}
     <div class="console " id="console">
       <p
           class="mx-0 flex justify-start items-center w-full text-xs"

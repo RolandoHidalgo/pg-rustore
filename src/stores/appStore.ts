@@ -11,6 +11,7 @@ const KEY_USER_NAME = 'ADMIN'
 export const useAppStore = defineStore('appStore', () => {
     const isAuth = ref(false);
     const isBackupOpen = ref(false)
+    const isDropOpen = ref(false)
     const isRestoreOpen = ref(false)
     const isBinariesOpen = ref(false)
     const isAboutOpen = ref(false)
@@ -35,6 +36,13 @@ export const useAppStore = defineStore('appStore', () => {
         currentOptions.value.dsName = dsName
         currentOptions.value.schema = schema
         isBackupOpen.value = true
+    }
+
+    function openDrop(dsName: string, dbName: string, schema: string = ''): void {
+        currentOptions.value.dbName = dbName
+        currentOptions.value.dsName = dsName
+        currentOptions.value.schema = schema
+        isDropOpen.value = true
     }
 
     function openBinaries(): void {
@@ -113,6 +121,8 @@ export const useAppStore = defineStore('appStore', () => {
         getAuth,
         login,
         deletePass,
+        openDrop,
+        isDropOpen,
         isDataSourceFormOpen
     }
 })

@@ -47,7 +47,22 @@ pub async fn backup(
     let tasker = LocalTasker::new(ds);
     tasker.backup(db_name, schema_name, &on_event);
 }
-
+#[tauri::command]
+pub async fn drop(
+    ds_name: String,
+    db_name: String,
+    schema_name: String,
+    on_event: Channel<DownloadEvent>,
+) {
+    let config: Config = load_config();
+    let ds = config
+        .datasources
+        .iter()
+        .find(|d| d.name == ds_name)
+        .unwrap();
+    let tasker = LocalTasker::new(ds);
+    tasker.drop(db_name, schema_name, &on_event);
+}
 #[tauri::command]
 pub async fn restore(
     ds_name: String,

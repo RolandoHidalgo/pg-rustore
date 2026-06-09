@@ -37,6 +37,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             commands::backup,
+            commands::drop,
             commands::list_db,
             commands::get_binaries,
             commands::list_db_schemas,
