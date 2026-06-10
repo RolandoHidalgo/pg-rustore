@@ -4,7 +4,7 @@ use crate::binaries::{
 use crate::config::{
     find_binaries, load_config, save_config, BinaryInfo, Config, DataSource, DataSourceConfig,
 };
-use crate::tasks::{BackupInfo, LocalTasker, RestoreOptions, Tasker};
+use crate::tasks::{BackupFormat, BackupInfo, BackupOptions, LocalTasker, RestoreOptions, Tasker};
 use reqwest::header::{ACCEPT, USER_AGENT};
 use serde::Serialize;
 use std::env::home_dir;
@@ -37,6 +37,7 @@ pub async fn backup(
     db_name: String,
     schema_name: String,
     on_event: Channel<DownloadEvent>,
+    formats: Vec<BackupFormat>,
 ) {
     let config: Config = load_config();
     let ds = config
@@ -45,7 +46,22 @@ pub async fn backup(
         .find(|d| d.name == ds_name)
         .unwrap();
     let tasker = LocalTasker::new(ds);
-    tasker.backup(db_name, schema_name, &on_event);
+    let opt = BackupOptions {
+        format: BackupFormat::Custom,
+    };
+
+    println!("backups {:?}", formats);
+    for (i, f) in formats.iter().enumerate() {
+        let is_last = i == formats.len() - 1;
+        let opt = BackupOptions { format: f.clone() };
+        tasker.backup(
+            db_name.clone(),
+            schema_name.clone(),
+            &on_event,
+            &opt,
+            is_last.clone(),
+        );
+    }
 }
 #[tauri::command]
 pub async fn drop(

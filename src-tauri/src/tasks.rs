@@ -57,6 +57,18 @@ pub struct BackupInfo {
     pub db_name: String,
 }
 
+#[derive(Debug,Clone, Serialize,Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BackupFormat {
+    Custom,
+    Sql,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BackupOptions {
+    pub format: BackupFormat,
+}
+
 fn get_value_after_double_points(line: &str, split_pattern: &str) -> String {
     line.split(split_pattern)
         .nth(1)
@@ -69,7 +81,14 @@ fn get_value_after_double_points(line: &str, split_pattern: &str) -> String {
 }
 
 pub trait Tasker {
-    fn backup(&self, db_name: String, schema_name: String, on_event: &Channel<DownloadEvent>);
+    fn backup(
+        &self,
+        db_name: String,
+        schema_name: String,
+        on_event: &Channel<DownloadEvent>,
+        options: &BackupOptions,
+        emit_finished: bool,
+    );
     fn drop(&self, db_name: String, schema_name: String, on_event: &Channel<DownloadEvent>);
 
     fn restore(&self, restore_options: RestoreOptions, on_event: &Channel<DownloadEvent>);
@@ -100,24 +119,41 @@ impl<'a> LocalTasker<'a> {
 }
 
 impl<'a> Tasker for LocalTasker<'a> {
-    fn backup(&self, db_name: String, schema_name: String, on_event: &Channel<DownloadEvent>) {
+    fn backup(
+        &self,
+        db_name: String,
+        schema_name: String,
+        on_event: &Channel<DownloadEvent>,
+        options: &BackupOptions,
+        emit_finished: bool,
+    ) {
         //`${dbName}${schemmaName}_${getFormattedDateTime()}.backup`
         let schema_suffix = if schema_name.is_empty() {
             String::new()
         } else {
             format!("_{}", schema_name)
         };
-        let backup_path = format!(
-            "C:/Users/rolan/pgrustore/backups/{}{}_{}.backup",
-            db_name,
-            schema_suffix,
-            get_formatted_date_time()
-        );
+
         let bin = format!("{}{}", self.data_source.bin, "/pg_dump.exe");
 
         let port = &self.data_source.port.to_string();
         //let params = `--file ${path.normalize(backupPath)} --host ${host} --port ${port} --username ${user} --format=c --verbose${schammaParams} ${dbName}`
         // 🔹 Construimos los argumentos
+
+        let base_path = Path::new(home_dir().unwrap().as_path()).join("pgrustore/backups");
+        let (ext, format_arg) = match options.format {
+            BackupFormat::Custom => (".backup", "--format=c"),
+            BackupFormat::Sql => (".sql", "--format=p"),
+        };
+        let backup_path = format!(
+            "{}/{}{}_{}{}",
+            base_path.display(),
+            db_name,
+            schema_suffix,
+            get_formatted_date_time(),
+            ext
+        );
+
         let mut args = vec![
             "--file",
             &backup_path,
@@ -127,7 +163,7 @@ impl<'a> Tasker for LocalTasker<'a> {
             port,
             "--username",
             &self.data_source.user,
-            "--format=c",
+            format_arg,
             "--verbose",
         ];
 
@@ -177,21 +213,26 @@ impl<'a> Tasker for LocalTasker<'a> {
         // Esperamos a que termine el proceso
         // let status = child.wait().expect("error al esperar");
 
-        on_event
-            .send(DownloadEvent::Finished {
-                msg: "finalizado".to_string(),
-            })
-            .unwrap();
+        if emit_finished {
+            on_event
+                .send(DownloadEvent::Finished {
+                    msg: "finalizado".to_string(),
+                })
+                .unwrap();
+        }
     }
 
     fn drop(&self, db_name: String, schema_name: String, on_event: &Channel<DownloadEvent>) {
         //`${dbName}${schemmaName}_${getFormattedDateTime()}.backup`
-        let schema_suffix = if schema_name.is_empty() {
-            String::new()
-        } else {
-            format!("_{}", schema_name)
-        };
-     //   let base_path = Path::new(home_dir().unwrap().as_path()).join("pgrustore/backups");
+
+        // let schema_suffix = if schema_name.is_empty() {
+        //     String::new()
+        // } else {
+        //     format!("_{}", schema_name)
+        // };
+
+
+        //   let base_path = Path::new(home_dir().unwrap().as_path()).join("pgrustore/backups");
         // let backup_path = format!(
         //     "{}/{}{}_{}.backup",
         //     base_path.display(),
@@ -205,7 +246,6 @@ impl<'a> Tasker for LocalTasker<'a> {
         //let params = `--file ${path.normalize(backupPath)} --host ${host} --port ${port} --username ${user} --format=c --verbose${schammaParams} ${dbName}`
         // 🔹 Construimos los argumentos
         let mut args = vec![
-
             "--host",
             &self.data_source.host,
             "--port",
