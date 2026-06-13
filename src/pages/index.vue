@@ -10,15 +10,17 @@ import {onMounted} from "vue";
 import {useAppStore} from "@/stores/appStore.ts";
 import AboutDialog from "@/components/AboutDialog.vue";
 import DropDrawer from "@/components/forms/DropDrawer.vue";
+import {invoke} from "@tauri-apps/api/core";
 
 const store = useAppStore();
-onMounted(() => {
-  listen('open-file', (event) => {
-    console.log(
-        `event`, event
-    );
-    store.openRestore('', event.payload)
-  });
+onMounted(async () => {
+
+  const path = await invoke('get_launch_path');
+  console.log(path)
+  if (path) {
+    store.openRestore('', path);
+  }
+
 })
 </script>
 
