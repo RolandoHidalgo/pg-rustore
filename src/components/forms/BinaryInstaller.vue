@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import {Button} from '@/components/ui/button'
-import {useAppStore} from '@/stores/appStore'
 
+import {useAppStore} from '@/stores/appStore'
+import {Spinner} from '@/components/ui/spinner'
 import {
   Sheet,
   SheetContent,
@@ -16,18 +16,21 @@ import {ref, watchEffect} from 'vue'
 
 import {useBinaryStore} from "@/stores/binaryStore.ts";
 import BinaryItem from "@/components/forms/BinaryItem.vue";
+import {Empty,  EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle} from "@/components/ui/empty";
+
 
 
 const store = useAppStore()
 const binaryStore = useBinaryStore();
 
 //const onEvent = new Channel<DownloadEvent>();
-
+const isLoading = ref(false);
 
 watchEffect(async () => {
   if (store.isBinariesOpen) {
-    
+    isLoading.value = true;
     await binaryStore.getRemoteBinaries()
+    isLoading.value = false;
   }
 })
 
@@ -43,16 +46,32 @@ watchEffect(async () => {
       </SheetHeader>
 
 
-        <div class="flex w-full max-w-md flex-col gap-4 px-4">
-          <template v-for="asset in binaryStore.remoteBinaries">
-            <BinaryItem
-                v-model:installed="asset.installed"
-                :browser_download_url="asset.browser_download_url"
-                :name="asset.name"
-                :size="String(asset.size)"></BinaryItem>
-          </template>
+      <div class="flex w-full max-w-md flex-col gap-4 px-4">
+        <template v-if="isLoading">
+          <Empty class="w-full">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Spinner />
+              </EmptyMedia>
+              <EmptyTitle>Cargando Binarios</EmptyTitle>
+              <EmptyDescription>
+                Espere mientras se cargan los datos de los binarios remotos.
+              </EmptyDescription>
+            </EmptyHeader>
 
-        </div>
+          </Empty>
+        </template>
+        <template v-else>
+          <BinaryItem
+              v-for="asset in binaryStore.remoteBinaries"
+              :key="asset.name"
+              v-model:installed="asset.installed"
+              :browser_download_url="asset.browser_download_url"
+              :name="asset.name"
+              :size="String(asset.size)"></BinaryItem>
+        </template>
+
+      </div>
       <SheetFooter>
 
       </SheetFooter>

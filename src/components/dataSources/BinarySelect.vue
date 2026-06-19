@@ -21,8 +21,9 @@ const binaries = ref<BinaryInfo[]>([]);
 const store = useAppStore()
 onMounted(async () => {
   binaries.value = (await store.getBinaries()).map(e=>{
-    return {...e,binary:e.binary.replace(/\\/g,'/')}
+    return {...e,binary:e.binary.replace(/\\/g,'/').replace(/\/\//,'/')}
   });
+  console.log(binaries.value)
 })
 
 </script>

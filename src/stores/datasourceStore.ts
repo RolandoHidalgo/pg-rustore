@@ -53,7 +53,7 @@ export const useDatasourceStore = defineStore('datasourceStore', () => {
             is_ssh: false,
         }
         await invoke("edit_ds", {ds: val});
-        await loadDs()
+        await loadDs(true)
     }
 
     async function deleteDatasource(name: string) {

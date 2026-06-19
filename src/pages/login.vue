@@ -39,10 +39,11 @@ async function login() {
   try {
     const valid = await store.login(passwd.value);
     console.log(valid);
-    loading.value = false;
+
     if (valid) {
       console.log("valid")
       router.push("/")
+      //loading.value = false;
     }
   } finally {
     loading.value = false

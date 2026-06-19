@@ -7,7 +7,6 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -163,6 +162,7 @@ store.$onAction(({ name, after }) => {
       setValues({ ...store.currentDsForm })
       
       isEdit.value = store.currentDsForm !== null
+      console.log(store.currentDsForm,'ffff')
       //resetForm({ values:  })
       store.currentDsForm = null
     }

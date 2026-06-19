@@ -15,6 +15,7 @@
         "title": "PG_RUSTORE",
         "width": 342,
         "height": 626,
+        "center": true,
         "resizable": false,
         "fullscreen": false,
         "maximizable": false,

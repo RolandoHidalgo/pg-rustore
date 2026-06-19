@@ -4,8 +4,9 @@ import {computed, ref} from "vue";
 import {Button} from "@/components/ui/button";
 import {Channel, invoke} from "@tauri-apps/api/core";
 import {Progress} from '@/components/ui/progress'
-import {Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle} from "@/components/ui/item";
+import {Item, ItemActions, ItemContent, ItemDescription, ItemFooter, ItemMedia, ItemTitle} from "@/components/ui/item";
 import { Binary,CloudDownload,Trash2 } from 'lucide-vue-next'
+import {Spinner} from "@/components/ui/spinner";
 
 const installed = defineModel('installed')
 const props = defineProps<Pick<Asset, 'browser_download_url' | 'name' | 'size'>>();
@@ -76,17 +77,18 @@ async function remove() {
 <template>
   <Item variant="outline" size="sm" class="py-2">
     <ItemMedia>
-      <Binary  class="size-5 text-sky-500" />
+      <Spinner v-if="isDownloading"/>
+      <Binary  v-else class="size-5 text-sky-500" />
     </ItemMedia>
     <ItemContent class="gap-0">
-      <template v-if="!isDownloading">
+
         <ItemTitle>{{ currentName }}</ItemTitle>
 
-      </template>
-      <template v-else>
-        <Progress :model-value="prog" class="w-full"/>
 
-      </template>
+<!--      <template v-else>-->
+<!--        <Progress :model-value="prog" class="w-full"/>-->
+
+<!--      </template>-->
       <ItemDescription class="text-xs">
         {{ desc }}
       </ItemDescription>
@@ -115,6 +117,9 @@ async function remove() {
         <Trash2/>
       </Button>
     </ItemActions>
+    <ItemFooter v-if="isDownloading">
+      <Progress :model-value="prog" class="w-full"/>
+    </ItemFooter>
   </Item>
 </template>
 
