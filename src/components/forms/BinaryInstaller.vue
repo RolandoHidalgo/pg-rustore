@@ -17,6 +17,7 @@ import {ref, watchEffect} from 'vue'
 import {useBinaryStore} from "@/stores/binaryStore.ts";
 import BinaryItem from "@/components/forms/BinaryItem.vue";
 import {Empty,  EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle} from "@/components/ui/empty";
+import {LoaderIcon} from "lucide-vue-next";
 
 
 
@@ -52,8 +53,13 @@ watchEffect(async () => {
             <EmptyHeader>
               <EmptyMedia variant="icon">
                 <Spinner />
+<!--                <LoaderIcon-->
+<!--                            role="status"-->
+<!--                            aria-label="Loading"-->
+<!--                            class="size-4 animate-spin"-->
+<!--                />-->
               </EmptyMedia>
-              <EmptyTitle>Cargando Binarios</EmptyTitle>
+              <EmptyTitle>Cargando pgBins</EmptyTitle>
               <EmptyDescription>
                 Espere mientras se cargan los datos de los binarios remotos.
               </EmptyDescription>

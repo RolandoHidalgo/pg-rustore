@@ -66,7 +66,10 @@ const formSchema = z.object({
 
 const {handleSubmit} = useForm({
   validationSchema: computed(() => toTypedSchema(formSchema)),
-  keepValuesOnUnmount: true
+  keepValuesOnUnmount: true,
+  initialValues:{
+    formats:['custom']
+  }
 })
 
 
