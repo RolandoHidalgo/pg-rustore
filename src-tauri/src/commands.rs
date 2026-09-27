@@ -95,7 +95,12 @@ pub async fn restore(
 
     let ds = config.datasources.iter().find(|d| d.name == valid).unwrap();
     let tasker = LocalTasker::new(ds);
-    tasker.restore(restore_options, &on_event);
+    if *(&restore_options.backup.ends_with(".backup")) {
+        tasker.restore(restore_options, &on_event);
+    } else {
+        //descomprimir si corresponde
+        tasker.restore_sql(restore_options, &on_event);
+    }
 }
 
 #[tauri::command]

@@ -92,6 +92,7 @@ pub trait Tasker {
     fn drop(&self, db_name: String, schema_name: String, on_event: &Channel<DownloadEvent>);
 
     fn restore(&self, restore_options: RestoreOptions, on_event: &Channel<DownloadEvent>);
+    fn restore_sql(&self, restore_options: RestoreOptions, on_event: &Channel<DownloadEvent>);
     fn create_db(&self, restore_options: &RestoreOptions, on_event: &Channel<DownloadEvent>);
     fn list_db(&self) -> Result<Vec<String>, ()>;
     fn list_db_schemas(&self, db_name: String) -> Vec<String>;
@@ -325,9 +326,9 @@ impl<'a> Tasker for LocalTasker<'a> {
         let bin = format!("{}{}", self.data_source.bin, "/pg_restore.exe");
         let path = PathBuf::from(&restore_options.backup);
         let port = &self.data_source.port.to_string();
-
+        let is_backup = &restore_options.backup.ends_with(".backup");
         // 🔹 Construimos los argumentos
-        let args = vec![
+        let mut args = vec![
             "--host",
             &self.data_source.host,
             "--port",
@@ -336,11 +337,19 @@ impl<'a> Tasker for LocalTasker<'a> {
             &self.data_source.user,
             "--role",
             "postgres",
+            "-j",
+            "3",
             "--dbname",
             &restore_options.db_name,
             "--verbose",
             path.to_str().unwrap(),
         ];
+        // println!("{}",&restore_options.backup);
+        // if *is_backup {
+        //     println!("entro");
+        //     args.push("-j");
+        //     args.push("3");
+        // }
 
         let mut child = spawn_builder(
             bin,
@@ -381,6 +390,87 @@ impl<'a> Tasker for LocalTasker<'a> {
             })
             .unwrap();
     }
+
+    fn restore_sql(&self, restore_options: RestoreOptions, on_event: &Channel<DownloadEvent>) {
+        on_event
+            .send(DownloadEvent::Started {
+                msg: "iniciado".to_string(),
+            })
+            .unwrap();
+        if let Some(new_db_options) = &restore_options.new_db_options {
+            println!(
+                "crear db {} {} {}",
+                new_db_options.encoding, new_db_options.template, restore_options.db_name
+            );
+            self.create_db(&restore_options, on_event);
+        }
+
+        let bin = format!("{}{}", self.data_source.bin, "/psql.exe");
+        let path = PathBuf::from(&restore_options.backup);
+        let port = &self.data_source.port.to_string();
+
+        // 🔹 Construimos los argumentos
+        let  args = vec![
+            "--host",
+            &self.data_source.host,
+            "--port",
+            port,
+            "--username",
+            &self.data_source.user,
+            "--dbname",
+            &restore_options.db_name,
+            "-f",
+            path.to_str().unwrap(),
+            "-a",
+            "-e"
+        ];
+        // println!("{}",&restore_options.backup);
+        // if *is_backup {
+        //     println!("entro");
+        //     args.push("-j");
+        //     args.push("3");
+        // }
+
+        let mut child = spawn_builder(
+            bin,
+            args,
+            None,
+            Some(vec![(
+                "PGPASSWORD".into(),
+                self.data_source.password.as_str().into(),
+            )]),
+        )
+            .spawn()
+            .unwrap();
+
+        // Obtenemos el pipe de salida
+        let stdout = child.stdout.take().expect("no se pudo capturar stdout");
+        // Lo envolvemos en un BufReader para leer línea por línea
+        let mut reader = BufReader::new(stdout);
+
+        let mut buf = Vec::new();
+        while let Ok(n) = reader.read_until(b'\n', &mut buf) {
+            if n == 0 {
+                break;
+            }
+
+            on_event
+                .send(DownloadEvent::Progress {
+                    msg: String::from_utf8_lossy(&buf).to_string(),
+                })
+                .unwrap();
+            buf.clear();
+        }
+        // Esperamos a que termine el proceso
+        //let status = child.wait().expect("error al esperar");
+
+        on_event
+            .send(DownloadEvent::Finished {
+                msg: "finalizado".to_string(),
+            })
+            .unwrap();
+    }
+
     fn create_db(&self, restore_options: &RestoreOptions, on_event: &Channel<DownloadEvent>) {
         let bin = format!("{}{}", self.data_source.bin, "/createdb.exe");
         let port = &self.data_source.port.to_string();

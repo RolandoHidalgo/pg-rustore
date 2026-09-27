@@ -32,7 +32,11 @@ const valueShow = computed(() => {
 const selectFile = async () => {
   const selected = await open({
     multiple: false,
-    directory: false
+    directory: false,
+    filters: [{
+      name: 'backup',
+      extensions: ['backup','sql','sql.zst']
+    }]
   })
   if (selected) {
     // setea el valor en vee-validate
