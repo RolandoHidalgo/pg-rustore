@@ -105,6 +105,7 @@ pub async fn restore(
 
 #[tauri::command]
 pub fn list_db(name: String) -> Result<Vec<String>, String> {
+
     let config: Config = load_config();
 
     let ds = config.datasources.iter().find(|d| d.name == name).unwrap();

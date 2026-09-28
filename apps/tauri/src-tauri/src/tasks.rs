@@ -2,7 +2,7 @@ use crate::commands::DownloadEvent;
 use crate::config::DataSource;
 use serde::{Deserialize, Serialize};
 use std::env::home_dir;
-
+use pgrust_core::tasks::prueba_core;
 use std::io::{BufRead, BufReader};
 use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
@@ -532,6 +532,7 @@ impl<'a> Tasker for LocalTasker<'a> {
     }
 
     fn list_db(&self) -> Result<Vec<String>, ()> {
+        prueba_core();
         let bin = format!("{}{}", self.data_source.bin, "/psql.exe");
         let port = &self.data_source.port.to_string();
         //const command = `"${binary}\\${commands.psql}" -U ${user} --host ${host} --port ${port} -c "\\l"`

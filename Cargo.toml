@@ -1,0 +1,21 @@
+[workspace]
+resolver = "2"
+
+members = [
+    "crates/pgrust_core",
+
+#    "crates/portainer",
+#    "crates/postgres",
+#    "crates/updater",
+    "apps/pgrust_cli",
+    "apps/tauri/src-tauri",
+]
+
+
+
+[workspace.dependencies]
+pgrust_core = { path = "crates/pgrust_core" }
+#windows = "=0.61.3"
+#tao="=0.35.3"
+#webview2-com-sys="=0.38.2"
+#wry="=0.55.1"
