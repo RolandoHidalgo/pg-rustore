@@ -1,5 +1,6 @@
+use pgrust_core::config::DataSource;
 use pgrust_core::tasks::backup_db;
 
-pub fn backup() {
-    backup_db()
+pub fn backup(ds: &DataSource, db_name: &String) {
+    backup_db(ds, db_name);
 }

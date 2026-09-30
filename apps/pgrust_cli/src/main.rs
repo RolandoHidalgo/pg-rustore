@@ -1,7 +1,8 @@
-use crate::menu::handle_main_menu;
+use crate::menu::{handle_main_menu, print_banner3};
 use crate::tasks::{inputs, selects};
 use dialoguer::{FuzzySelect, theme::ColorfulTheme};
 use pgrust_core::config::ensure_config_exist;
+use crate::data_sources::ds_ui::select_ds;
 
 mod backups;
 mod data_sources;
@@ -17,8 +18,10 @@ mod tasks;
 
 fn main() {
     // inputs();
+    print_banner3();
     ensure_config_exist().expect("TODO: panic message");
-    handle_main_menu();
+   // handle_main_menu();
+    select_ds();
 
     // let selections = &[
     //     "Ice Cream",

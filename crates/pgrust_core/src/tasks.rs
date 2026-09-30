@@ -1,10 +1,10 @@
+use crate::config::{Config, DataSource, load_config};
 use crate::utils::executors::DbError;
 use crate::utils::{build_command, execute_streaming};
 use std::env::home_dir;
 use std::path::Path;
-use time::macros::format_description;
 use time::OffsetDateTime;
-
+use time::macros::format_description;
 
 pub fn prueba_core() {
     println!("Hola desde app-core!");
@@ -15,16 +15,13 @@ fn get_formatted_date_time() -> String {
     let format = format_description!("[year]_[month]_[day]_[hour][minute]");
     now.format(&format).unwrap()
 }
-pub fn backup_db() {
+pub fn backup_db(ds: &DataSource, db_name: &String) {
     //`${dbName}${schemmaName}_${getFormattedDateTime()}.backup`
     let schema_suffix = String::new();
 
-    let bin = format!(
-        "{}{}",
-        "C:/Users/rolan/pgrustore/bins/pg-bin16.3-1-win/bin", "/pg_dump.exe"
-    );
+    let bin = format!("{}{}", &ds.bin, "/pg_dump.exe");
 
-    let port = "5432";
+    let port = &ds.port.to_string();
     //let params = `--file ${path.normalize(backupPath)} --host ${host} --port ${port} --username ${user} --format=c --verbose${schammaParams} ${dbName}`
     // 🔹 Construimos los argumentos
 
@@ -33,7 +30,7 @@ pub fn backup_db() {
     let backup_path = format!(
         "{}/{}{}_{}{}",
         base_path.display(),
-        "sigip-julio-26",
+        &db_name,
         schema_suffix,
         get_formatted_date_time(),
         ext
@@ -43,30 +40,91 @@ pub fn backup_db() {
         "--file",
         &backup_path,
         "--host",
-        "127.0.0.1",
+        &ds.host,
         "--port",
         port,
         "--username",
-        "postgres",
+        &ds.user,
         format_arg,
         "--verbose",
     ];
 
     // Finalmente el nombre de la base
-    args.push("sigip-julio-26");
+    args.push(&db_name);
 
     let cmd = build_command(
         bin,
         &args,
         None,
-        Some(vec![("PGPASSWORD".into(), "nvideacerr".into())]),
+        Some(vec![("PGPASSWORD".into(), ds.password.as_str().into())]),
     );
 
     println!("Started iniciado /n");
     execute_streaming(cmd, |line| {
         println!("Progress: {}", line);
     })
-    .map_err(|e| DbError::ExecutionError(e.to_string())).unwrap();
+    .map_err(|e| DbError::ExecutionError(e.to_string()))
+    .unwrap();
 
     println!("Finished finalizado /n");
+}
+
+pub fn list_db(name: &String) -> Result<Vec<String>, String> {
+    let config: Config = load_config();
+
+    let ds = config.datasources.iter().find(|d| &d.name == name).unwrap();
+    // let tasker = LocalTasker::new(ds);
+
+    // match tasker.list_db() {
+    //     Ok(dbs) => Ok(dbs),
+    //     Err(_) => Err("Error genérico al listar bases de datos".to_string()),
+    // }
+
+    Ok(list_db_base(ds))
+}
+
+fn list_db_base(ds: &DataSource) -> Vec<String> {
+    let bin = format!("{}{}", ds.bin, "/psql.exe");
+    let port = &ds.port.to_string();
+    //const command = `"${binary}\\${commands.psql}" -U ${user} --host ${host} --port ${port} -c "\\l"`
+    // 🔹 Construimos los argumentos
+    let args = vec![
+        "-U", &ds.user, "--host", &ds.host, "--port", port, "-c", "\\l",
+    ];
+
+    let mut cmd = build_command(
+        bin,
+        &args,
+        None,
+        Some(vec![("PGPASSWORD".into(), ds.password.clone())]),
+    );
+    let output = cmd
+        .output()
+        .map_err(|e| DbError::SpawnError(e.to_string()))
+        .unwrap();
+
+    if !output.status.success() {
+        let err_msg = String::from_utf8_lossy(&output.stderr).to_string();
+        //return Err(DbError::ExecutionError(format!("psql falló: {}", err_msg)));
+    }
+
+    let stdout_str = String::from_utf8_lossy(&output.stdout);
+    let mut dbs = Vec::new();
+
+    for line in stdout_str.lines() {
+        if line.contains('|')
+            && !line.contains("Name")
+            && !line.contains("Nombre")
+            && !line.starts_with('-')
+        {
+            if let Some(first_col) = line.split('|').next() {
+                let db_name = first_col.trim();
+                if !db_name.is_empty() && db_name != "template0" && db_name != "template1" {
+                    dbs.push(db_name.to_string());
+                }
+            }
+        }
+    }
+
+    dbs
 }
