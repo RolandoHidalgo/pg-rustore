@@ -2,12 +2,14 @@ use crate::menu::{handle_main_menu, print_banner3};
 use crate::tasks::{inputs, selects};
 use dialoguer::{FuzzySelect, theme::ColorfulTheme};
 use pgrust_core::config::ensure_config_exist;
+use crate::binaries::show_binaries;
 use crate::data_sources::ds_ui::select_ds;
 
 mod backups;
 mod data_sources;
 mod menu;
 mod tasks;
+mod binaries;
 // use indicatif::{ProgressBar, ProgressStyle};
 // use std::thread;
 // use std::time::Duration;
@@ -15,13 +17,14 @@ mod tasks;
 // use dialoguer::Confirm;
 // use dialoguer::theme::ColorfulTheme;
 // use pgrust_core::tasks::prueba_core;
-
-fn main() {
+#[tokio::main(flavor = "current_thread")]
+async fn main() {
     // inputs();
     print_banner3();
     ensure_config_exist().expect("TODO: panic message");
    // handle_main_menu();
-    select_ds();
+    //select_ds();
+    show_binaries().await;
 
     // let selections = &[
     //     "Ice Cream",
