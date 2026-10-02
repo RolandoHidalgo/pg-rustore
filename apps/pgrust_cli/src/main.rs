@@ -22,9 +22,9 @@ async fn main() {
     // inputs();
     print_banner3();
     ensure_config_exist().expect("TODO: panic message");
-   // handle_main_menu();
+   handle_main_menu().await;
     //select_ds();
-    show_binaries().await;
+    //show_binaries().await;
 
     // let selections = &[
     //     "Ice Cream",

@@ -4,8 +4,23 @@ use dialoguer::theme::ColorfulTheme;
 use indicatif::{ProgressBar, ProgressStyle};
 use pgrust_core::binaries::binary_manager::{Asset, Release, download_bin_and_extract_bin};
 use pgrust_core::binaries::fetch_bins;
+use std::time::Duration;
 
 pub async fn show_binaries() {
+    let spinner = ProgressBar::new_spinner();
+
+    // 2. ¡CRUCIAL! Habilitar la animación automática cada 100ms.
+    // Sin esto, el spinner se congelará durante el .await
+    spinner.enable_steady_tick(Duration::from_millis(100));
+
+    // 3. Configurar el estilo visual (usando caracteres Unicode de braille, se ven muy profesionales)
+    let style = ProgressStyle::with_template("{spinner:.cyan.bold} {msg}")
+        .unwrap()
+        .tick_strings(&["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]);
+
+    spinner.set_style(style);
+    spinner.set_message("Consultando última versión en GitHub...");
+
     let release: Release = fetch_bins().await.expect("ad");
     let binaries: Vec<String> = release
         .assets
@@ -18,8 +33,9 @@ pub async fn show_binaries() {
             format!("{}@{} installed{}", x.name, x.size, installed)
         })
         .collect();
+    spinner.finish_and_clear();
     let selection = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("select binaries")
+        .with_prompt("Select binary")
         // .default(0)
         .items(&binaries[..])
         .interact()

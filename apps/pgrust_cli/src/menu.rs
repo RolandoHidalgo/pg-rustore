@@ -1,17 +1,12 @@
-use console::{Color, Style};
 use crate::backups::backup;
-use crate::data_sources::ds_ui::ds_main_menu;
+use crate::binaries::show_binaries;
+use crate::data_sources::ds_ui::{ds_main_menu, select_ds};
+use console::{Color, Style};
 use dialoguer::Select;
 use dialoguer::theme::ColorfulTheme;
 
-pub fn handle_main_menu() {
-    let selections = &[
-        "Gestonar DS",
-        "Edit ds",
-        "Backup",
-        "A Pile of sweet, sweet mustard",
-        "salir",
-    ];
+pub async fn handle_main_menu() {
+    let selections = &["Gestonar binarios", "Backup", "salir"];
     loop {
         let selection = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Pick your flavor")
@@ -21,15 +16,16 @@ pub fn handle_main_menu() {
             .unwrap();
         match selection {
             0 => {
-                ds_main_menu();
+                show_binaries().await;
             }
             1 => {
-                println!("nevermind then {}:(", 1)
+                println!("nevermind then {}:(", 1);
+                select_ds();
             }
             2 => {
                 println!("Creando backup /n {}:(", 2);
                 println!();
-                // backup();
+                break;
             }
             3 => {
                 println!("nevermind then {}:(", 3)
@@ -45,8 +41,6 @@ pub fn handle_main_menu() {
     }
 }
 pub fn print_banner() {
-
-
     let cyan_bold = Style::new().cyan().bold();
     let blue_bold = Style::new().blue().bold();
     let blue = Style::new().blue();
@@ -98,9 +92,8 @@ pub fn print_banner2() {
         cyan_bold.apply_to("PGRUSTORE"),
         blue_dim.apply_to("— PostgreSQL Wrapper")
     );
-    println!();}
-
-
+    println!();
+}
 
 pub fn print_banner3() {
     // Color256(208) es un naranja vibrante estilo Rust

@@ -65,7 +65,7 @@ pub fn ds_main_menu() {
 
 pub fn select_ds() {
     println!("\n");
-    println!("Listado de los ds encontrados:");
+    //println!("Listado de los ds encontrados:");
     let config: Config = load_config();
     let ds_config = DataSourceConfig {
         datasources: config.datasources,
@@ -86,7 +86,7 @@ pub fn select_ds() {
         .map(|ds| format!("{}@{}", ds.name, ds.host))
         .collect();
     let selection = Select::with_theme(&ColorfulTheme::default())
-        .with_prompt("Seleccione una opcion para los ds.")
+        .with_prompt("Seleccione un ds.")
         // .default(0)
         .items(&selections[..])
         .interact()
@@ -101,7 +101,7 @@ pub fn select_ds() {
 }
 pub fn show_db_selection(dbs: &Vec<String>) -> String {
     let selection = FuzzySelect::with_theme(&ColorfulTheme::default())
-        .with_prompt("Pick your flavor")
+        .with_prompt("Seleccione una db")
         .default(0)
         .items(&dbs[..])
         .interact()
