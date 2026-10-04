@@ -9,7 +9,7 @@ pub async fn handle_main_menu() {
     let selections = &["Gestonar binarios", "Backup","Restore", "salir"];
     loop {
         let selection = Select::with_theme(&ColorfulTheme::default())
-            .with_prompt("Pick your flavor")
+            .with_prompt("Seleccione una opcion.")
             // .default(0)
             .items(&selections[..])
             .interact()
@@ -28,7 +28,8 @@ pub async fn handle_main_menu() {
 
             }
             3 => {
-                println!("nevermind then {}:(", 3)
+                println!("nevermind then {}:(", 3);
+                break;
             }
             4 => {
                 println!("nevermind then {}:(", 4);
