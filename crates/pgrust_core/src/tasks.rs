@@ -1,11 +1,27 @@
 use crate::config::{Config, DataSource, load_config};
 use crate::utils::executors::DbError;
 use crate::utils::{build_command, execute_streaming};
+use serde::{Deserialize, Serialize};
 use std::env::home_dir;
-use std::path::Path;
+use std::io::BufReader;
+use std::path::{Path, PathBuf};
 use time::OffsetDateTime;
 use time::macros::format_description;
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct RestoreOptions {
+    pub db_name: String,
+    pub backup: String,
+    pub new_db_options: Option<NewDbOptions>,
+}
 
+#[derive(Clone, Serialize, Deserialize,Debug)]
+pub struct NewDbOptions {
+    pub encoding: String,
+    pub template: String,
+    pub collation: String,
+    pub character_type: String,
+    pub tablespace: String,
+}
 pub fn prueba_core() {
     println!("Hola desde app-core!");
 }
@@ -15,9 +31,16 @@ fn get_formatted_date_time() -> String {
     let format = format_description!("[year]_[month]_[day]_[hour][minute]");
     now.format(&format).unwrap()
 }
-pub fn backup_db(ds: &DataSource, db_name: &String) {
+pub fn backup_db<F>(ds: &DataSource, db_name: &String, schema_name: &String, mut on_line: F)
+where
+    F: FnMut(String),
+{
     //`${dbName}${schemmaName}_${getFormattedDateTime()}.backup`
-    let schema_suffix = String::new();
+    let schema_suffix = if schema_name.is_empty() {
+        String::new()
+    } else {
+        format!("_{}", schema_name)
+    };
 
     let bin = format!("{}{}", &ds.bin, "/pg_dump.exe");
 
@@ -48,6 +71,10 @@ pub fn backup_db(ds: &DataSource, db_name: &String) {
         format_arg,
         "--verbose",
     ];
+    if !schema_name.is_empty() {
+        args.push("--schema");
+        args.push(&schema_name);
+    }
 
     // Finalmente el nombre de la base
     args.push(&db_name);
@@ -60,11 +87,9 @@ pub fn backup_db(ds: &DataSource, db_name: &String) {
     );
 
     println!("Started iniciado /n");
-    execute_streaming(cmd, |line| {
-        println!("Progress: {}", line);
-    })
-    .map_err(|e| DbError::ExecutionError(e.to_string()))
-    .unwrap();
+    execute_streaming(cmd, |line| on_line(line))
+        .map_err(|e| DbError::ExecutionError(e.to_string()))
+        .unwrap();
 
     println!("Finished finalizado /n");
 }
@@ -127,4 +152,99 @@ fn list_db_base(ds: &DataSource) -> Vec<String> {
     }
 
     dbs
+}
+pub fn list_db_schemas(ds: &DataSource, db_name: &String) -> Vec<String> {
+    let bin = format!("{}{}", &ds.bin, "/psql.exe");
+    let port = &ds.port.to_string();
+    //const command = `"${binary}\\${commands.psql}" -U ${username} --host ${host} -d ${dbName} --port ${port} -c "\\dn"`,
+    // 🔹 Construimos los argumentos
+    let args: Vec<&str> = vec![
+        "-U", &ds.user, "--host", &ds.host, "-d", &db_name, "--port", port, "-c", "\\dn",
+    ];
+
+    let mut cmd = build_command(
+        bin,
+        &args,
+        None,
+        Some(vec![("PGPASSWORD".into(), ds.password.clone())]),
+    );
+    let output = cmd
+        .output()
+        .map_err(|e| DbError::SpawnError(e.to_string()))
+        .unwrap();
+
+    let stdout_str = String::from_utf8_lossy(&output.stdout);
+
+    let mut schemas: Vec<String> = Vec::new();
+
+    for line in stdout_str.lines() {
+        // saltamos encabezados y separadores
+        if line.contains('|')
+            && !line.contains("Name")
+            && !line.contains("Nombre")
+            && !line.starts_with('-')
+        {
+            // primera columna antes del primer '|'
+            if let Some(first_col) = line.split('|').next() {
+                let db_name = first_col.trim();
+                if !db_name.is_empty() && db_name != "template0" && db_name != "template1" {
+                    schemas.push(db_name.to_string());
+                }
+            }
+        }
+    }
+
+    schemas
+}
+
+fn restore<F>(ds: &DataSource, restore_options: &RestoreOptions, mut on_line: F)
+where
+    F: FnMut(String),
+{
+    if let Some(new_db_options) = &restore_options.new_db_options {
+        println!(
+            "crear db {} {} {}",
+            new_db_options.encoding, new_db_options.template, restore_options.db_name
+        );
+        //self.create_db(&restore_options, on_event);
+    }
+
+    let bin = format!("{}{}", &ds.bin, "/pg_restore.exe");
+    let path = PathBuf::from(&restore_options.backup);
+    let port = &ds.port.to_string();
+    let is_backup = &restore_options.backup.ends_with(".backup");
+    // 🔹 Construimos los argumentos
+    let args = vec![
+        "--host",
+        &ds.host,
+        "--port",
+        port,
+        "--username",
+        &ds.user,
+        "--role",
+        "postgres",
+        "-j",
+        "3",
+        "--dbname",
+        &restore_options.db_name,
+        "--verbose",
+        path.to_str().unwrap(),
+    ];
+    // println!("{}",&restore_options.backup);
+    // if *is_backup {
+    //     println!("entro");
+    //     args.push("-j");
+    //     args.push("3");
+    // }
+
+    let cmd = build_command(
+        bin,
+        &args,
+        None,
+        Some(vec![("PGPASSWORD".into(), ds.password.as_str().into())]),
+    );
+
+    execute_streaming(cmd, |line| on_line(line))
+        .map_err(|e| DbError::ExecutionError(e.to_string()))
+        .unwrap();
 }

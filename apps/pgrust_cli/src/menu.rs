@@ -1,12 +1,12 @@
 use crate::backups::backup;
 use crate::binaries::show_binaries;
-use crate::data_sources::ds_ui::{ds_main_menu, select_ds};
+use crate::data_sources::ds_ui::{ds_main_menu, select_ds, show_backup_flow, show_restore_flow};
 use console::{Color, Style};
 use dialoguer::Select;
 use dialoguer::theme::ColorfulTheme;
 
 pub async fn handle_main_menu() {
-    let selections = &["Gestonar binarios", "Backup", "salir"];
+    let selections = &["Gestonar binarios", "Backup","Restore", "salir"];
     loop {
         let selection = Select::with_theme(&ColorfulTheme::default())
             .with_prompt("Pick your flavor")
@@ -20,12 +20,12 @@ pub async fn handle_main_menu() {
             }
             1 => {
                 println!("nevermind then {}:(", 1);
-                select_ds();
+                show_backup_flow();
             }
             2 => {
                 println!("Creando backup /n {}:(", 2);
-                println!();
-                break;
+                show_restore_flow();
+
             }
             3 => {
                 println!("nevermind then {}:(", 3)

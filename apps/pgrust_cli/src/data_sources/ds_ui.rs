@@ -1,9 +1,9 @@
+use crate::backups::backup;
 use console::Style;
 use dialoguer::theme::ColorfulTheme;
-use dialoguer::{FuzzySelect, Select};
-use pgrust_core::config::{Config, DataSourceConfig, load_config};
-use pgrust_core::tasks::list_db;
-use crate::backups::backup;
+use dialoguer::{FuzzySelect, Input, Select};
+use pgrust_core::config::{Config, DataSource, DataSourceConfig, load_config};
+use pgrust_core::tasks::{NewDbOptions, RestoreOptions, list_db, list_db_schemas};
 
 pub fn ds_main_menu() {
     let selections = &[
@@ -62,8 +62,17 @@ pub fn ds_main_menu() {
         }
     }
 }
-
-pub fn select_ds() {
+pub fn show_backup_flow() {
+    let ds = select_ds();
+    let dbs = list_db(&ds.name).expect("TODO: panic message");
+    // for db in &dbs {
+    //     println!("{}", db);
+    // }
+    let selected_db = show_db_selection(&dbs);
+    let schema = get_schema_name_menu(&ds, &selected_db);
+    backup(&ds, &selected_db, &schema);
+}
+pub fn select_ds() -> DataSource {
     println!("\n");
     //println!("Listado de los ds encontrados:");
     let config: Config = load_config();
@@ -92,12 +101,11 @@ pub fn select_ds() {
         .interact()
         .unwrap();
     println!("{}", selection);
-    let dbs = list_db(&ds_config.datasources[selection].name).expect("TODO: panic message");
-    // for db in &dbs {
-    //     println!("{}", db);
-    // }
-    let selected_db = show_db_selection(&dbs);
-    backup(&ds_config.datasources[selection],&selected_db);
+    ds_config
+        .datasources
+        .into_iter()
+        .nth(selection)
+        .expect("Error de seleccion de ds.")
 }
 pub fn show_db_selection(dbs: &Vec<String>) -> String {
     let selection = FuzzySelect::with_theme(&ColorfulTheme::default())
@@ -107,4 +115,100 @@ pub fn show_db_selection(dbs: &Vec<String>) -> String {
         .interact()
         .unwrap();
     dbs[selection].to_string()
+}
+
+pub fn get_schemas(ds: &DataSource, db_name: &String) -> Vec<String> {
+    list_db_schemas(ds, db_name)
+}
+
+pub fn get_schema_name_menu(ds: &DataSource, db_name: &String) -> String {
+    let mut schema_name = "".to_string();
+    let selections = &["Toda la db", "seleccionar esquema"];
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Optionally pick your flavor")
+        .default(0)
+        .items(&selections[..])
+        .interact()
+        .unwrap();
+
+    if selection == 1 {
+        let schemmas = get_schemas(ds, db_name);
+
+        let s_selection = FuzzySelect::with_theme(&ColorfulTheme::default())
+            .with_prompt("Seleccione un schema")
+            .default(0)
+            .items(&schemmas[..])
+            .interact()
+            .unwrap();
+        schema_name = format!("{}", &schemmas[s_selection]);
+    }
+
+    schema_name.to_string()
+}
+
+pub fn new_db_menu() -> RestoreOptions {
+    let templates = &["template0"];
+    let collations = &["C"];
+    let c_type = &["C"];
+    let tablesapces = &["pg_default"];
+    let encodings = &["LATIN1"];
+
+    let input: String = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("Your name")
+        .interact_text()
+        .unwrap();
+    let selection_template = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Seleccione un template")
+        .default(0)
+        .items(&templates[..])
+        .interact()
+        .unwrap();
+
+    let selection_collations = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Seleccione un collations")
+        .default(0)
+        .items(&collations[..])
+        .interact()
+        .unwrap();
+
+    let selection_c_type = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Seleccione un C. type")
+        .default(0)
+        .items(&c_type[..])
+        .interact()
+        .unwrap();
+
+    let selection_ts = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Seleccione un Table_space")
+        .default(0)
+        .items(&tablesapces[..])
+        .interact()
+        .unwrap();
+
+    let selection_encodings = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Seleccione un Table_space")
+        .default(0)
+        .items(&encodings[..])
+        .interact()
+        .unwrap();
+    RestoreOptions {
+        db_name: input,
+        backup: "".to_string(),
+        new_db_options: Some(NewDbOptions {
+            template: templates[selection_template].to_string(),
+            collation: collations[selection_collations].to_string(),
+            character_type: c_type[selection_c_type].to_string(),
+            tablespace: tablesapces[selection_ts].to_string(),
+            encoding: encodings[selection_encodings].to_string(),
+        }),
+    }
+}
+
+pub fn show_restore_flow() {
+    let ds = select_ds();
+    let new_db = true;
+    if (new_db) {
+        let options = new_db_menu();
+        println!("{:#?}", options);
+    }
 }
