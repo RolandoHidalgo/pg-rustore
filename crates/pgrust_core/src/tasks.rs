@@ -3,7 +3,7 @@ use crate::utils::executors::DbError;
 use crate::utils::{build_command, execute_streaming};
 use serde::{Deserialize, Serialize};
 use std::env::home_dir;
-use std::io::BufReader;
+
 use std::path::{Path, PathBuf};
 use time::OffsetDateTime;
 use time::macros::format_description;
@@ -14,7 +14,7 @@ pub struct RestoreOptions {
     pub new_db_options: Option<NewDbOptions>,
 }
 
-#[derive(Clone, Serialize, Deserialize,Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct NewDbOptions {
     pub encoding: String,
     pub template: String,
@@ -129,7 +129,7 @@ fn list_db_base(ds: &DataSource) -> Vec<String> {
         .unwrap();
 
     if !output.status.success() {
-        let err_msg = String::from_utf8_lossy(&output.stderr).to_string();
+        let _err_msg = String::from_utf8_lossy(&output.stderr).to_string();
         //return Err(DbError::ExecutionError(format!("psql falló: {}", err_msg)));
     }
 
@@ -197,7 +197,7 @@ pub fn list_db_schemas(ds: &DataSource, db_name: &String) -> Vec<String> {
     schemas
 }
 
-fn restore<F>(ds: &DataSource, restore_options: &RestoreOptions, mut on_line: F)
+pub fn restore<F>(ds: &DataSource, restore_options: &RestoreOptions, mut on_line: F)
 where
     F: FnMut(String),
 {
@@ -206,13 +206,13 @@ where
             "crear db {} {} {}",
             new_db_options.encoding, new_db_options.template, restore_options.db_name
         );
-        //self.create_db(&restore_options, on_event);
+        create_db(&ds, &restore_options, |line| on_line(line));
     }
 
     let bin = format!("{}{}", &ds.bin, "/pg_restore.exe");
     let path = PathBuf::from(&restore_options.backup);
     let port = &ds.port.to_string();
-    let is_backup = &restore_options.backup.ends_with(".backup");
+    let _is_backup = &restore_options.backup.ends_with(".backup");
     // 🔹 Construimos los argumentos
     let args = vec![
         "--host",
@@ -236,6 +236,47 @@ where
     //     args.push("-j");
     //     args.push("3");
     // }
+
+    let cmd = build_command(
+        bin,
+        &args,
+        None,
+        Some(vec![("PGPASSWORD".into(), ds.password.as_str().into())]),
+    );
+
+    execute_streaming(cmd, |line| on_line(line))
+        .map_err(|e| DbError::ExecutionError(e.to_string()))
+        .unwrap();
+}
+
+fn create_db<F>(ds: &DataSource, restore_options: &RestoreOptions, mut on_line: F)
+where
+    F: FnMut(String),
+{
+    let bin = format!("{}{}", &ds.bin, "/createdb.exe");
+    let port = &ds.port.to_string();
+    //let params = `--file ${path.normalize(backupPath)} --host ${host} --port ${port} --username ${user} --format=c --verbose${schammaParams} ${dbName}`
+    // 🔹 Construimos los argumentos
+    let new_opts = restore_options.new_db_options.as_ref().unwrap();
+    let args: Vec<&str> = vec![
+        "--host",
+        &ds.host,
+        "--port",
+        port,
+        "--username",
+        &ds.user,
+        "--encoding",
+        &new_opts.encoding,
+        "--lc-ctype",
+        &new_opts.character_type,
+        "--tablespace",
+        &new_opts.tablespace,
+        "--lc-collate",
+        &new_opts.collation,
+        "--template",
+        &new_opts.template,
+        &restore_options.db_name,
+    ];
 
     let cmd = build_command(
         bin,

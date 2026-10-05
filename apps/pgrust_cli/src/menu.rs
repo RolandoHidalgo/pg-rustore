@@ -1,6 +1,6 @@
-use crate::backups::backup;
+
 use crate::binaries::show_binaries;
-use crate::data_sources::ds_ui::{ds_main_menu, select_ds, show_backup_flow, show_restore_flow};
+use crate::data_sources::ds_ui::{show_backup_flow, show_restore_flow};
 use console::{Color, Style};
 use dialoguer::Select;
 use dialoguer::theme::ColorfulTheme;

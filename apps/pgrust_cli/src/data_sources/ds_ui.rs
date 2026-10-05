@@ -1,9 +1,11 @@
 use crate::backups::backup;
+use crate::backups::backup_manager::restore_db;
 use console::Style;
 use dialoguer::theme::ColorfulTheme;
-use dialoguer::{FuzzySelect, Input, Select};
+use dialoguer::{Confirm, FuzzySelect, Input, Select};
 use pgrust_core::config::{Config, DataSource, DataSourceConfig, load_config};
 use pgrust_core::tasks::{NewDbOptions, RestoreOptions, list_db, list_db_schemas};
+use std::path::Path;
 
 pub fn ds_main_menu() {
     let selections = &[
@@ -191,9 +193,11 @@ pub fn new_db_menu() -> RestoreOptions {
         .items(&encodings[..])
         .interact()
         .unwrap();
+    let backup_path = get_backup_path();
+
     RestoreOptions {
         db_name: input,
-        backup: "".to_string(),
+        backup: backup_path,
         new_db_options: Some(NewDbOptions {
             template: templates[selection_template].to_string(),
             collation: collations[selection_collations].to_string(),
@@ -204,11 +208,53 @@ pub fn new_db_menu() -> RestoreOptions {
     }
 }
 
+/// Solicita al usuario la ruta absoluta de un archivo .backup y valida que exista.
+fn get_backup_path() -> String {
+    Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("Ingrese la ruta absoluta del archivo .backup")
+        .validate_with(|input: &String| {
+            let path = Path::new(input);
+
+            if !path.is_absolute() {
+                return Err(
+                    "La ruta debe ser absoluta. Ejemplo: C:/backups/mi_db.backup".to_string(),
+                );
+            }
+            if !path.exists() {
+                return Err(format!("El archivo '{}' no existe.", input));
+            }
+            if !path.is_file() {
+                return Err(format!("'{}' no es un archivo válido.", input));
+            }
+            Ok(())
+        })
+        .interact_text()
+        .unwrap()
+}
+
 pub fn show_restore_flow() {
     let ds = select_ds();
-    let new_db = true;
-    if (new_db) {
-        let options = new_db_menu();
-        println!("{:#?}", options);
+    let options = get_restore_options(&ds);
+    restore_db(&ds, &options);
+}
+
+pub fn get_restore_options(ds: &DataSource) -> RestoreOptions {
+    let new_db = Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt("¿Crear una nueva base de datos?")
+        .interact()
+        .unwrap();
+
+    if new_db {
+        new_db_menu()
+    } else {
+        let dbs = list_db(&ds.name).expect("Error al listar bases de datos");
+        let db_name = show_db_selection(&dbs);
+        let backup = get_backup_path();
+
+        RestoreOptions {
+            db_name,
+            backup,
+            new_db_options: None,
+        }
     }
 }

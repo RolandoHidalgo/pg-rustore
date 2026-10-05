@@ -1,9 +1,7 @@
 use crate::menu::{handle_main_menu, print_banner3};
-use crate::tasks::{inputs, selects};
-use dialoguer::{FuzzySelect, theme::ColorfulTheme};
+
 use pgrust_core::config::ensure_config_exist;
-use crate::binaries::show_binaries;
-use crate::data_sources::ds_ui::select_ds;
+
 
 mod backups;
 mod data_sources;
